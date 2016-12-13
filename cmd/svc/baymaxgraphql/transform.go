@@ -847,7 +847,7 @@ func transformStringListSettingToResponse(config *settings.Config, value *settin
 		Title:       config.Title,
 		Description: config.Description,
 		Value: &models.StringListSettingValue{
-			Values: value.GetStringList().Values,
+			Values: value.GetStringList().DisplayValues,
 		},
 	}
 }
@@ -871,7 +871,7 @@ func transformTextSettingToResponse(config *settings.Config, value *settings.Val
 		Title:       config.Title,
 		Description: config.Description,
 		Value: &models.TextSettingValue{
-			Value: value.GetText().Value,
+			Value: value.GetText().DisplayValue,
 		},
 	}
 }

@@ -96,9 +96,17 @@ message TextConfig {
 }
 message TextValue {
 	string value = 1;
+	string display_value = 2;
 }
 message TextRequirements {
 	string match_regexp = 1;
+	TextType text_type = 2;
+
+}
+
+enum TextType { 
+	FREE_TEXT = 0;
+	PHONE = 1;
 }
 
 // String list
@@ -109,6 +117,7 @@ message StringListConfig {
 }
 message StringListValue {
 	repeated string values = 1;
+	repeated string display_values = 2;
 }
 message StringListRequirements {
 	TextRequirements text_requirements = 1;

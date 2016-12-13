@@ -5,6 +5,8 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/settings"
 )
 
@@ -145,8 +147,20 @@ func transformTextRequirementsToModel(req *settings.TextRequirements) (*models.T
 			return nil, errors.Errorf("Regular expression %q is invalid: %s", req.MatchRegexp, err)
 		}
 	}
+
+	var textType models.TextType
+	switch req.TextType {
+	case settings.TextType_PHONE:
+		textType = models.TextType_PHONE
+	case settings.TextType_FREE_TEXT:
+		textType = models.TextType_FREE_TEXT
+	default:
+		return nil, errors.Errorf("unknown text type %s", req.TextType)
+	}
+
 	return &models.TextRequirements{
 		MatchRegexp: req.MatchRegexp,
+		TextType:    textType,
 	}, nil
 }
 
@@ -183,12 +197,16 @@ func transformModelToConfig(config *models.Config) (*settings.Config, error) {
 			},
 		}
 	case *models.Config_Text:
+		requirements, err := transformTextRequirementsToResponse(config.Text.Requirements)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 		c.Config = &settings.Config_Text{
 			Text: &settings.TextConfig{
 				Default: &settings.TextValue{
 					Value: config.Text.Default.Value,
 				},
-				Requirements: transformTextRequirementsToResponse(config.Text.Requirements),
+				Requirements: requirements,
 			},
 		}
 	case *models.Config_MultiSelect:
@@ -235,9 +253,14 @@ func transformModelToConfig(config *models.Config) (*settings.Config, error) {
 			}
 		}
 	case *models.Config_StringList:
+		requirements, err := transformStringListRequirementsToResponse(config.StringList.Requirements)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+
 		c.Config = &settings.Config_StringList{
 			StringList: &settings.StringListConfig{
-				Requirements: transformStringListRequirementsToResponse(config.StringList.Requirements),
+				Requirements: requirements,
 			},
 		}
 		if config.StringList.Default != nil {
@@ -252,27 +275,45 @@ func transformModelToConfig(config *models.Config) (*settings.Config, error) {
 	return c, nil
 }
 
-func transformStringListRequirementsToResponse(req *models.StringListRequirements) *settings.StringListRequirements {
+func transformStringListRequirementsToResponse(req *models.StringListRequirements) (*settings.StringListRequirements, error) {
 	if req == nil {
-		return nil
+		return nil, nil
 	}
+
+	textRequirements, err := transformTextRequirementsToResponse(req.TextRequirements)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
 	return &settings.StringListRequirements{
-		TextRequirements: transformTextRequirementsToResponse(req.TextRequirements),
+		TextRequirements: textRequirements,
 		MinValues:        req.MinValues,
 		MaxValues:        req.MaxValues,
-	}
+	}, nil
 }
 
-func transformTextRequirementsToResponse(req *models.TextRequirements) *settings.TextRequirements {
+func transformTextRequirementsToResponse(req *models.TextRequirements) (*settings.TextRequirements, error) {
 	if req == nil {
-		return nil
+		return nil, nil
 	}
+
+	var textType settings.TextType
+	switch req.TextType {
+	case models.TextType_PHONE:
+		textType = settings.TextType_PHONE
+	case models.TextType_FREE_TEXT:
+		textType = settings.TextType_FREE_TEXT
+	default:
+		return nil, errors.Errorf("unknown text type %s", req.TextType)
+	}
+
 	return &settings.TextRequirements{
 		MatchRegexp: req.MatchRegexp,
-	}
+		TextType:    textType,
+	}, nil
 }
 
-func transformModelToValue(value *models.Value) *settings.Value {
+func transformModelToValue(value *models.Value, currentConfig *models.Config) *settings.Value {
 	v := &settings.Value{
 		Key: &settings.ConfigKey{
 			Key:    value.Key.Key,
@@ -302,14 +343,40 @@ func transformModelToValue(value *models.Value) *settings.Value {
 		}
 		if w := value.GetText(); w != nil {
 			v.GetText().Value = w.Value
+			switch currentConfig.GetText().GetRequirements().TextType {
+			case models.TextType_PHONE:
+				pn, err := phone.Format(value.GetText().Value, phone.Pretty)
+				if err != nil {
+					golog.Errorf("Unable to parse phone number %s : %s", v.GetText().Value, err)
+				}
+				v.GetText().DisplayValue = pn
+			}
+
 		}
+
 	case models.ConfigType_STRING_LIST:
 		v.Value = &settings.Value_StringList{
 			StringList: &settings.StringListValue{},
 		}
 		if value.GetStringList() != nil {
 			v.GetStringList().Values = value.GetStringList().Values
+			v.GetStringList().DisplayValues = make([]string, len(v.GetStringList().Values))
+			for i, value := range v.GetStringList().Values {
+				v.GetStringList().DisplayValues[i] = value
+			}
+
+			switch currentConfig.GetStringList().GetRequirements().TextRequirements.TextType {
+			case models.TextType_PHONE:
+				for i, value := range v.GetStringList().Values {
+					pn, err := phone.Format(value, phone.Pretty)
+					if err != nil {
+						golog.Errorf("Unable to parse phone number %s : %s", value, err)
+					}
+					v.GetStringList().DisplayValues[i] = pn
+				}
+			}
 		}
+
 	case models.ConfigType_MULTI_SELECT:
 		v.Value = &settings.Value_MultiSelect{
 			MultiSelect: &settings.MultiSelectValue{

@@ -406,6 +406,42 @@ func TestSetValue_StringList(t *testing.T) {
 		},
 	}))
 
+	md.Expect(mock.NewExpectation(md.GetValues, "12345", []*models.ConfigKey{
+		{
+			Key:    "testingkey",
+			Subkey: "22222",
+		},
+	}).WithReturns([]*models.Value{
+		{
+			Key: &models.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Config: &models.Config{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_STRING_LIST,
+				AllowSubkeys: true,
+				Config: &models.Config_StringList{
+					StringList: &models.StringListConfig{
+						Default: &models.StringListValue{},
+						Requirements: &models.StringListRequirements{
+							TextRequirements: &models.TextRequirements{
+								MatchRegexp: `^[0-9]+$`,
+							},
+						},
+					},
+				},
+			},
+			Value: &models.Value_StringList{
+				StringList: &models.StringListValue{
+					Values: []string{"123", "9"},
+				},
+			},
+		},
+	}, nil))
+
 	server := New(md)
 	_, err := server.SetValue(context.Background(), &settings.SetValueRequest{
 		NodeID: "12345",
@@ -423,6 +459,270 @@ func TestSetValue_StringList(t *testing.T) {
 		},
 	})
 	test.OK(t, err)
+	mock.FinishAll(md)
+}
+
+func TestSetValue_StringList_PhoneType(t *testing.T) {
+	md := dalmock.New(t)
+	md.Expect(mock.NewExpectation(md.GetConfigs, []string{"testingkey"}).WithReturns(
+		[]*models.Config{
+			{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_STRING_LIST,
+				AllowSubkeys: true,
+				Config: &models.Config_StringList{
+					StringList: &models.StringListConfig{
+						Default: &models.StringListValue{},
+						Requirements: &models.StringListRequirements{
+							TextRequirements: &models.TextRequirements{
+								TextType: models.TextType_PHONE,
+							},
+						},
+					},
+				},
+			},
+		}, nil))
+
+	md.Expect(mock.NewExpectation(md.SetValues, "12345", []*models.Value{
+		{
+			Key: &models.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Value: &models.Value_StringList{
+				StringList: &models.StringListValue{
+					Values: []string{"+11234567890", "+11234567891"},
+				},
+			},
+			Config: &models.Config{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_STRING_LIST,
+				AllowSubkeys: true,
+				Config: &models.Config_StringList{
+					StringList: &models.StringListConfig{
+						Default: &models.StringListValue{},
+						Requirements: &models.StringListRequirements{
+							TextRequirements: &models.TextRequirements{
+								TextType: models.TextType_PHONE,
+							},
+						},
+					},
+				},
+			},
+		},
+	}))
+
+	md.Expect(mock.NewExpectation(md.GetValues, "12345", []*models.ConfigKey{
+		{
+			Key:    "testingkey",
+			Subkey: "22222",
+		},
+	}).WithReturns([]*models.Value{
+		{
+			Key: &models.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Config: &models.Config{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_STRING_LIST,
+				AllowSubkeys: true,
+				Config: &models.Config_StringList{
+					StringList: &models.StringListConfig{
+						Default: &models.StringListValue{},
+						Requirements: &models.StringListRequirements{
+							TextRequirements: &models.TextRequirements{
+								TextType: models.TextType_PHONE,
+							},
+						},
+					},
+				},
+			},
+			Value: &models.Value_StringList{
+				StringList: &models.StringListValue{
+					Values: []string{"+11234567890", "+11234567891"},
+				},
+			},
+		},
+	}, nil))
+
+	server := New(md)
+	_, err := server.SetValue(context.Background(), &settings.SetValueRequest{
+		NodeID: "12345",
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Type: settings.ConfigType_STRING_LIST,
+			Value: &settings.Value_StringList{
+				StringList: &settings.StringListValue{
+					Values: []string{"(123) 456-7890", "(123) 456-7891"},
+				},
+			},
+		},
+	})
+	test.OK(t, err)
+	mock.FinishAll(md)
+}
+
+func TestSetValue_Text_PhoneType(t *testing.T) {
+	md := dalmock.New(t)
+	md.Expect(mock.NewExpectation(md.GetConfigs, []string{"testingkey"}).WithReturns(
+		[]*models.Config{
+			{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_TEXT,
+				AllowSubkeys: true,
+				Config: &models.Config_Text{
+					Text: &models.TextConfig{
+						Default: &models.TextValue{
+							Value: "+11234567890",
+						},
+						Requirements: &models.TextRequirements{
+							TextType: models.TextType_PHONE,
+						},
+					},
+				},
+			},
+		}, nil))
+
+	md.Expect(mock.NewExpectation(md.SetValues, "12345", []*models.Value{
+		{
+			Key: &models.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Value: &models.Value_Text{
+				Text: &models.TextValue{
+					Value: "+11234567890",
+				},
+			},
+			Config: &models.Config{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_TEXT,
+				AllowSubkeys: true,
+				Config: &models.Config_Text{
+					Text: &models.TextConfig{
+						Default: &models.TextValue{
+							Value: "+11234567890",
+						},
+						Requirements: &models.TextRequirements{
+							TextType: models.TextType_PHONE,
+						},
+					},
+				},
+			},
+		},
+	}))
+
+	md.Expect(mock.NewExpectation(md.GetValues, "12345", []*models.ConfigKey{
+		{
+			Key:    "testingkey",
+			Subkey: "22222",
+		},
+	}).WithReturns([]*models.Value{
+		{
+			Key: &models.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Config: &models.Config{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_TEXT,
+				AllowSubkeys: true,
+				Config: &models.Config_Text{
+					Text: &models.TextConfig{
+						Default: &models.TextValue{
+							Value: "+11234567890",
+						},
+						Requirements: &models.TextRequirements{
+							TextType: models.TextType_PHONE,
+						},
+					},
+				},
+			},
+			Value: &models.Value_Text{
+				Text: &models.TextValue{
+					Value: "+11234567890",
+				},
+			},
+		},
+	}, nil))
+
+	server := New(md)
+	_, err := server.SetValue(context.Background(), &settings.SetValueRequest{
+		NodeID: "12345",
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Type: settings.ConfigType_TEXT,
+			Value: &settings.Value_Text{
+				Text: &settings.TextValue{
+					Value: "(123) 456-7890",
+				},
+			},
+		},
+	})
+	test.OK(t, err)
+	mock.FinishAll(md)
+}
+
+func TestSetValue_StringList_FailedPhoneType(t *testing.T) {
+	md := dalmock.New(t)
+	md.Expect(mock.NewExpectation(md.GetConfigs, []string{"testingkey"}).WithReturns(
+		[]*models.Config{
+			{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_STRING_LIST,
+				AllowSubkeys: true,
+				Config: &models.Config_StringList{
+					StringList: &models.StringListConfig{
+						Default: &models.StringListValue{},
+						Requirements: &models.StringListRequirements{
+							TextRequirements: &models.TextRequirements{
+								TextType: models.TextType_PHONE,
+							},
+						},
+					},
+				},
+			},
+		}, nil))
+
+	server := New(md)
+	_, err := server.SetValue(context.Background(), &settings.SetValueRequest{
+		NodeID: "12345",
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Type: settings.ConfigType_STRING_LIST,
+			Value: &settings.Value_StringList{
+				StringList: &settings.StringListValue{
+					Values: []string{"(123) 456-78"},
+				},
+			},
+		},
+	})
+	test.Assert(t, err != nil, "Expected non-nil error")
+	test.Equals(t, "rpc error: code = 100 desc = The value \"(123) 456-78\" Invalid US phone number", err.Error())
 	mock.FinishAll(md)
 }
 
@@ -591,6 +891,57 @@ func TestSetValue_MultiSelect(t *testing.T) {
 			},
 		},
 	}))
+
+	md.Expect(mock.NewExpectation(md.GetValues, "12345", []*models.ConfigKey{
+		{
+			Key:    "testingkey",
+			Subkey: "22222",
+		},
+	}).WithReturns([]*models.Value{
+		{
+			Key: &models.ConfigKey{
+				Key:    "testingkey",
+				Subkey: "22222",
+			},
+			Config: &models.Config{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "testingkey",
+				Type:         models.ConfigType_MULTI_SELECT,
+				AllowSubkeys: true,
+				Config: &models.Config_MultiSelect{
+					MultiSelect: &models.MultiSelectConfig{
+						Items: []*models.Item{
+							{
+								ID:    "option1",
+								Label: "Option 1",
+							},
+							{
+								ID:    "option2",
+								Label: "Option 2",
+							},
+						},
+						Default: &models.MultiSelectValue{
+							Items: []*models.ItemValue{
+								{
+									ID: "option1",
+								},
+							},
+						},
+					},
+				},
+			},
+			Value: &models.Value_MultiSelect{
+				MultiSelect: &models.MultiSelectValue{
+					Items: []*models.ItemValue{
+						{
+							ID: "option1",
+						},
+					},
+				},
+			},
+		},
+	}, nil))
 
 	server := New(md)
 	_, err := server.SetValue(context.Background(), &settings.SetValueRequest{
@@ -844,6 +1195,122 @@ func TestGetValues_Default(t *testing.T) {
 	mock.FinishAll(md)
 }
 
+func TestGetValues_Text_PhoneType(t *testing.T) {
+	md := dalmock.New(t)
+	md.Expect(mock.NewExpectation(md.GetValues, "12345", []*models.ConfigKey{
+		{
+			Key:    "test",
+			Subkey: "22222",
+		},
+	}))
+	md.Expect(mock.NewExpectation(md.GetConfigs, []string{"test"}).WithReturns(
+		[]*models.Config{
+			{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "test",
+				Type:         models.ConfigType_TEXT,
+				AllowSubkeys: true,
+				Config: &models.Config_Text{
+					Text: &models.TextConfig{
+						Default: &models.TextValue{
+							Value: "+11234567890",
+						},
+						Requirements: &models.TextRequirements{
+							TextType: models.TextType_PHONE,
+						},
+					},
+				},
+			},
+		}, nil))
+
+	server := New(md)
+	res, err := server.GetValues(context.Background(), &settings.GetValuesRequest{
+		NodeID: "12345",
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    "test",
+				Subkey: "22222",
+			},
+		},
+	})
+	test.OK(t, err)
+	test.Equals(t, 1, len(res.Values))
+	test.Equals(t, &settings.Value{
+		Type: settings.ConfigType_TEXT,
+		Key: &settings.ConfigKey{
+			Key:    "test",
+			Subkey: "22222",
+		},
+		Value: &settings.Value_Text{
+			Text: &settings.TextValue{
+				Value:        "+11234567890",
+				DisplayValue: "(123) 456-7890",
+			},
+		},
+	}, res.Values[0])
+	mock.FinishAll(md)
+}
+
+func TestGetValues_StringList_PhoneType(t *testing.T) {
+	md := dalmock.New(t)
+	md.Expect(mock.NewExpectation(md.GetValues, "12345", []*models.ConfigKey{
+		{
+			Key:    "test",
+			Subkey: "22222",
+		},
+	}))
+	md.Expect(mock.NewExpectation(md.GetConfigs, []string{"test"}).WithReturns(
+		[]*models.Config{
+			{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "test",
+				Type:         models.ConfigType_STRING_LIST,
+				AllowSubkeys: true,
+				Config: &models.Config_StringList{
+					StringList: &models.StringListConfig{
+						Default: &models.StringListValue{
+							Values: []string{"+11234567890"},
+						},
+						Requirements: &models.StringListRequirements{
+							TextRequirements: &models.TextRequirements{
+								TextType: models.TextType_PHONE,
+							},
+						},
+					},
+				},
+			},
+		}, nil))
+
+	server := New(md)
+	res, err := server.GetValues(context.Background(), &settings.GetValuesRequest{
+		NodeID: "12345",
+		Keys: []*settings.ConfigKey{
+			{
+				Key:    "test",
+				Subkey: "22222",
+			},
+		},
+	})
+	test.OK(t, err)
+	test.Equals(t, 1, len(res.Values))
+	test.Equals(t, &settings.Value{
+		Type: settings.ConfigType_STRING_LIST,
+		Key: &settings.ConfigKey{
+			Key:    "test",
+			Subkey: "22222",
+		},
+		Value: &settings.Value_StringList{
+			StringList: &settings.StringListValue{
+				Values:        []string{"+11234567890"},
+				DisplayValues: []string{"(123) 456-7890"},
+			},
+		},
+	}, res.Values[0])
+	mock.FinishAll(md)
+}
+
 func TestGetValues_MultiSelect(t *testing.T) {
 	md := dalmock.New(t)
 	md.Expect(mock.NewExpectation(md.GetValues, "12345", []*models.ConfigKey{
@@ -892,6 +1359,23 @@ func TestGetValues_MultiSelect(t *testing.T) {
 							{
 								ID: "option1",
 							},
+						},
+					},
+				},
+			},
+		}, nil))
+	md.Expect(mock.NewExpectation(md.GetConfigs, []string{"test"}).WithReturns(
+		[]*models.Config{
+			{
+				Title:        "hello",
+				Description:  "hi",
+				Key:          "test",
+				Type:         models.ConfigType_BOOLEAN,
+				AllowSubkeys: true,
+				Config: &models.Config_Boolean{
+					Boolean: &models.BooleanConfig{
+						Default: &models.BooleanValue{
+							Value: true,
 						},
 					},
 				},

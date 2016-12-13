@@ -70,7 +70,14 @@ func (s *server) SetValue(ctx context.Context, in *settings.SetValueRequest) (*s
 		return nil, errors.Trace(err)
 	}
 
-	return &settings.SetValueResponse{}, nil
+	values, err := s.dal.GetValues(in.NodeID, []*models.ConfigKey{transformKeyToModel(in.Value.Key)})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return &settings.SetValueResponse{
+		Value: transformModelToValue(values[0], config),
+	}, nil
 }
 
 func (s *server) GetValues(ctx context.Context, in *settings.GetValuesRequest) (*settings.GetValuesResponse, error) {
@@ -97,17 +104,17 @@ func (s *server) GetValues(ctx context.Context, in *settings.GetValuesRequest) (
 	// check if value is present, if not, assign default
 	transformedValues := make([]*settings.Value, 0, len(in.Keys))
 	for _, k := range in.Keys {
-		if valueMap[k.String()] != nil {
-			transformedValues = append(transformedValues, transformModelToValue(valueMap[k.String()]))
-			continue
-		}
-
 		// lookup config
 		config, err := s.getConfig(k.Key)
 		if err != nil {
 			return nil, errors.Trace(err)
 		} else if config == nil {
 			return nil, grpc.Errorf(codes.NotFound, "config with key %s not found", k.Key)
+		}
+
+		if valueMap[k.String()] != nil {
+			transformedValues = append(transformedValues, transformModelToValue(valueMap[k.String()], config))
+			continue
 		}
 
 		// assign default
@@ -159,7 +166,7 @@ func (s *server) GetValues(ctx context.Context, in *settings.GetValuesRequest) (
 			return nil, grpc.Errorf(codes.Unimplemented, "config type %s not supported", config.Type)
 		}
 
-		transformedValues = append(transformedValues, transformModelToValue(val))
+		transformedValues = append(transformedValues, transformModelToValue(val, config))
 	}
 
 	return &settings.GetValuesResponse{
@@ -184,12 +191,17 @@ func (s *server) GetNodeValues(ctx context.Context, in *settings.GetNodeValuesRe
 		valueMap[v.Key.Key+v.Key.Subkey] = v
 	}
 
+	configMap := make(map[string]*models.Config, len(configs))
+	for _, c := range configs {
+		configMap[c.Key] = c
+	}
+
 	// TODO: Filter these settings by possible owner types (ORGANIZATION,INTERNAL,etc)
 	// Build out all the possible settings for the node with the total config set
 	transformedValues := make([]*settings.Value, 0, len(configs))
 	for _, c := range configs {
 		if v, ok := valueMap[c.Key]; ok {
-			transformedValues = append(transformedValues, transformModelToValue(v))
+			transformedValues = append(transformedValues, transformModelToValue(v, c))
 			delete(valueMap, c.Key)
 			continue
 		}
@@ -242,11 +254,11 @@ func (s *server) GetNodeValues(ctx context.Context, in *settings.GetNodeValuesRe
 			return nil, grpc.Errorf(codes.Unimplemented, "config type %s not supported", c.Type)
 		}
 
-		transformedValues = append(transformedValues, transformModelToValue(val))
+		transformedValues = append(transformedValues, transformModelToValue(val, c))
 	}
 
 	for _, v := range valueMap {
-		transformedValues = append(transformedValues, transformModelToValue(v))
+		transformedValues = append(transformedValues, transformModelToValue(v, configMap[v.Key.Key]))
 	}
 
 	return &settings.GetNodeValuesResponse{

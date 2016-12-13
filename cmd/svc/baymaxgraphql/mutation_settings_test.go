@@ -15,6 +15,7 @@ import (
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
+	"google.golang.org/grpc"
 )
 
 func TestModifySetting_Boolean(t *testing.T) {
@@ -83,7 +84,19 @@ func TestModifySetting_Boolean(t *testing.T) {
 				},
 			},
 		},
-	}).WithReturns(&settings.SetValueResponse{}, nil))
+	}).WithReturns(&settings.SetValueResponse{
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key: key,
+			},
+			Type: settings.ConfigType_BOOLEAN,
+			Value: &settings.Value_Boolean{
+				Boolean: &settings.BooleanValue{
+					Value: true,
+				},
+			},
+		},
+	}, nil))
 
 	res := g.query(ctx, `
 		mutation _ ($nodeID: ID!, $key: String!) {
@@ -195,11 +208,25 @@ func TestModifySetting_StringList(t *testing.T) {
 			Type: settings.ConfigType_STRING_LIST,
 			Value: &settings.Value_StringList{
 				StringList: &settings.StringListValue{
-					Values: []string{"(734) 846-5522", "(206) 877-3590", "(123) 456-5522"},
+					Values: []string{" 734 846-5522", "(206) 8773590", "1234565522"},
 				},
 			},
 		},
-	}).WithReturns(&settings.SetValueResponse{}, nil))
+	}).WithReturns(&settings.SetValueResponse{
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key:    key,
+				Subkey: "+17348465522",
+			},
+			Type: settings.ConfigType_STRING_LIST,
+			Value: &settings.Value_StringList{
+				StringList: &settings.StringListValue{
+					Values:        []string{" 734 8465522", "(206) 8773590", "1234565522"},
+					DisplayValues: []string{"(734) 846-5522", "(206) 877-3590", "(123) 456-5522"},
+				},
+			},
+		},
+	}, nil))
 
 	res := g.query(ctx, `
 		mutation _ ($nodeID: ID!, $key: String!, $subkey: String!) {
@@ -307,6 +334,22 @@ func TestModifySetting_StringList_InvalidInput(t *testing.T) {
 		},
 	}, nil))
 
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.SetValue, &settings.SetValueRequest{
+		NodeID: nodeID,
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key:    key,
+				Subkey: "+17348465522",
+			},
+			Type: settings.ConfigType_STRING_LIST,
+			Value: &settings.Value_StringList{
+				StringList: &settings.StringListValue{
+					Values: []string{" 734"},
+				},
+			},
+		},
+	}).WithReturns(&settings.SetValueResponse{}, grpc.Errorf(settings.InvalidUserValue, "Invalid US phone number")))
+
 	res := g.query(ctx, `
 		mutation _ ($nodeID: ID!, $key: String!, $subkey: String!) {
 			modifySetting(input: {
@@ -347,7 +390,7 @@ func TestModifySetting_StringList_InvalidInput(t *testing.T) {
 		"modifySetting": {
 			"clientMutationId": "a1b2c3",
 			"errorCode": "INVALID_INPUT",
-			"errorMessage": "Please enter a valid US phone number",
+			"errorMessage": "Invalid US phone number",
 			"setting": null,
 			"success": false
 		}
@@ -439,7 +482,25 @@ func TestModifySetting_MultiSelect(t *testing.T) {
 				},
 			},
 		},
-	}).WithReturns(&settings.SetValueResponse{}, nil))
+	}).WithReturns(&settings.SetValueResponse{
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key: key,
+			},
+			Type: settings.ConfigType_MULTI_SELECT,
+			Value: &settings.Value_MultiSelect{
+				MultiSelect: &settings.MultiSelectValue{
+					Items: []*settings.ItemValue{
+						{
+							ID: "option1",
+						},
+						{
+							ID: "option2",
+						},
+					},
+				},
+			},
+		}}, nil))
 
 	res := g.query(ctx, `
 		mutation _ ($nodeID: ID!, $key: String!) {
@@ -589,7 +650,21 @@ func TestModifySetting_SingleSelect(t *testing.T) {
 				},
 			},
 		},
-	}).WithReturns(&settings.SetValueResponse{}, nil))
+	}).WithReturns(&settings.SetValueResponse{
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key: key,
+			},
+			Type: settings.ConfigType_SINGLE_SELECT,
+			Value: &settings.Value_SingleSelect{
+				SingleSelect: &settings.SingleSelectValue{
+					Item: &settings.ItemValue{
+						ID: "option1",
+					},
+				},
+			},
+		},
+	}, nil))
 
 	res := g.query(ctx, `
 		mutation _ ($nodeID: ID!, $key: String!) {
@@ -821,7 +896,21 @@ func TestModifySetting_PatientBackwardsNotifications(t *testing.T) {
 				},
 			},
 		},
-	}).WithReturns(&settings.SetValueResponse{}, nil))
+	}).WithReturns(&settings.SetValueResponse{
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key: key,
+			},
+			Type: settings.ConfigType_SINGLE_SELECT,
+			Value: &settings.Value_SingleSelect{
+				SingleSelect: &settings.SingleSelectValue{
+					Item: &settings.ItemValue{
+						ID: notification.ThreadActivityNotificationPreferenceOff,
+					},
+				},
+			},
+		},
+	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.SavedQueries, nodeID).WithReturns([]*threading.SavedQuery{
 		{
@@ -978,7 +1067,21 @@ func TestModifySetting_TeamBackwardsNotifications(t *testing.T) {
 				},
 			},
 		},
-	}).WithReturns(&settings.SetValueResponse{}, nil))
+	}).WithReturns(&settings.SetValueResponse{
+		Value: &settings.Value{
+			Key: &settings.ConfigKey{
+				Key: key,
+			},
+			Type: settings.ConfigType_SINGLE_SELECT,
+			Value: &settings.Value_SingleSelect{
+				SingleSelect: &settings.SingleSelectValue{
+					Item: &settings.ItemValue{
+						ID: notification.ThreadActivityNotificationPreferenceOff,
+					},
+				},
+			},
+		},
+	}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.SavedQueries, nodeID).WithReturns([]*threading.SavedQuery{
 		{

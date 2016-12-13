@@ -33,7 +33,7 @@ var NumbersToRingConfig = &settings.Config{
 		StringList: &settings.StringListConfig{
 			Requirements: &settings.StringListRequirements{
 				TextRequirements: &settings.TextRequirements{
-					MatchRegexp: phone.RegexpE164,
+					TextType: settings.TextType_PHONE,
 				},
 			},
 		},

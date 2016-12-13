@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/settings/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/svc/settings"
 	"google.golang.org/grpc"
 )
@@ -96,11 +97,13 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 		if text == nil {
 			return nil, fmt.Errorf("No text value specified for %s", transformedValue.Key)
 		}
-		if err := validateTextRequirements(cfg.Text.Requirements, text.Value); err != nil {
+		if validatedText, err := validateTextRequirements(cfg.Text.Requirements, text.Value); err != nil {
 			if e, ok := errors.Cause(err).(errInvalidValue); ok {
 				return nil, grpc.Errorf(settings.InvalidUserValue, e.Error())
 			}
 			return nil, errors.Trace(err)
+		} else {
+			transformedValue.GetText().Value = validatedText
 		}
 	case *models.Config_StringList:
 		if transformedValue.GetStringList() == nil || len(transformedValue.GetStringList().Values) == 0 {
@@ -121,8 +124,9 @@ func validateValueAgainstConfig(value *settings.Value, config *models.Config) (*
 		if len(nonEmptyValues) == 0 && !config.OptionalValue {
 			return nil, grpc.Errorf(settings.InvalidUserValue, "Please specify at least one entry")
 		}
+		transformedValue.GetStringList().Values = nonEmptyValues
 
-		if err := validateStringListRequirements(cfg.StringList.Requirements, nonEmptyValues); err != nil {
+		if err := validateStringListRequirements(cfg.StringList.Requirements, transformedValue.GetStringList()); err != nil {
 			if e, ok := errors.Cause(err).(errInvalidValue); ok {
 				return nil, grpc.Errorf(settings.InvalidUserValue, e.Error())
 			}
@@ -147,30 +151,32 @@ func (e errInvalidValue) Error() string {
 	return fmt.Sprintf("The provided value is invalid, %s", e.reason)
 }
 
-func validateStringListRequirements(req *models.StringListRequirements, values []string) error {
+func validateStringListRequirements(req *models.StringListRequirements, val *models.StringListValue) error {
 	if req == nil {
 		return nil
 	}
 
-	if req.MinValues > 0 && len(values) < int(req.MinValues) {
+	if req.MinValues > 0 && len(val.Values) < int(req.MinValues) {
 		return errInvalidValue{reason: fmt.Sprintf("must have at least %d values", req.MinValues)}
 	}
-	if req.MaxValues > 0 && len(values) > int(req.MaxValues) {
+	if req.MaxValues > 0 && len(val.Values) > int(req.MaxValues) {
 		return errInvalidValue{reason: fmt.Sprintf("must have at most %d values", req.MaxValues)}
 	}
 	if req.TextRequirements != nil {
-		for _, v := range values {
-			if err := validateTextRequirements(req.TextRequirements, v); err != nil {
+		for i, v := range val.Values {
+			if validatedText, err := validateTextRequirements(req.TextRequirements, v); err != nil {
 				return errors.Trace(err)
+			} else {
+				val.Values[i] = validatedText
 			}
 		}
 	}
 	return nil
 }
 
-func validateTextRequirements(req *models.TextRequirements, text string) error {
+func validateTextRequirements(req *models.TextRequirements, text string) (string, error) {
 	if req == nil {
-		return nil
+		return "", nil
 	}
 	if req.MatchRegexp != "" {
 		// The config should have been validated much earlier so the regex compile shouldn't ever fail
@@ -178,8 +184,17 @@ func validateTextRequirements(req *models.TextRequirements, text string) error {
 		if err != nil {
 			golog.Errorf("Regular expression %q is invalid: %s", req.MatchRegexp, err)
 		} else if !re.MatchString(text) {
-			return errInvalidValue{value: text, reason: "does not match expected format"}
+			return "", errInvalidValue{value: text, reason: "does not match expected format"}
 		}
 	}
-	return nil
+	switch req.TextType {
+	case models.TextType_PHONE:
+		pn, err := phone.ParseNumber(text)
+		if err != nil {
+			golog.Errorf("Invalid US phone number '%s' : %s", text, err)
+			return "", errInvalidValue{value: text, reason: "Invalid US phone number"}
+		}
+		return pn.String(), nil
+	}
+	return text, nil
 }

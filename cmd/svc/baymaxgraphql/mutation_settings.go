@@ -294,22 +294,7 @@ var modifySettingMutation = &graphql.Field{
 					return nil, fmt.Errorf("Expected string in array but got %T for config %s.%s", sItem, key, subkey)
 				}
 
-				// TODO: Add validator to the string list to enforce each item in the list to be of a particular type
-				if isForwardingList {
-					pn, err := phone.Format(str, phone.Pretty)
-					if err != nil {
-						return &modifySettingOutput{
-							ClientMutationID: mutationID,
-							Success:          false,
-							ErrorCode:        modifySettingErrorCodeInvalidInput,
-							ErrorMessage:     "Please enter a valid US phone number",
-						}, nil
-					}
-
-					val.GetStringList().Values[i] = pn
-				} else {
-					val.GetStringList().Values[i] = str
-				}
+				val.GetStringList().Values[i] = str
 			}
 
 		case settings.ConfigType_BOOLEAN:
@@ -365,7 +350,7 @@ var modifySettingMutation = &graphql.Field{
 			return nil, fmt.Errorf("Unsupported type %s for config %s.%s", config.Type.String(), key, subkey)
 		}
 
-		_, err = svc.settings.SetValue(ctx, &settings.SetValueRequest{
+		setValueRes, err := svc.settings.SetValue(ctx, &settings.SetValueRequest{
 			NodeID: nodeID,
 			Value:  val,
 		})
@@ -384,17 +369,17 @@ var modifySettingMutation = &graphql.Field{
 		var setting interface{}
 		switch config.Type {
 		case settings.ConfigType_BOOLEAN:
-			setting = transformBooleanSettingToResponse(config, val)
+			setting = transformBooleanSettingToResponse(config, setValueRes.Value)
 		case settings.ConfigType_MULTI_SELECT, settings.ConfigType_SINGLE_SELECT:
-			setting = transformMultiSelectToResponse(config, val)
+			setting = transformMultiSelectToResponse(config, setValueRes.Value)
 		case settings.ConfigType_STRING_LIST:
-			setting = transformStringListSettingToResponse(config, val)
+			setting = transformStringListSettingToResponse(config, setValueRes.Value)
 		default:
 			return nil, fmt.Errorf("Unsupported type %s", config.Type.String())
 
 		}
 
-		if err := handleSavedQueryBackwards(ctx, ram, nodeID, val); err != nil {
+		if err := handleSavedQueryBackwards(ctx, ram, nodeID, setValueRes.Value); err != nil {
 			return nil, errors.InternalError(ctx, fmt.Errorf("Error while setting old config for %s", val.Key.Key))
 		}
 
