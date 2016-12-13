@@ -179,7 +179,7 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 					}
 				case *invite.LookupInviteResponse_Patient:
 
-					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+					ent, err := raccess.UnauthorizedEntity(ctx, ram, &directory.LookupEntitiesRequest{
 						Key: &directory.LookupEntitiesRequest_EntityID{
 							EntityID: inv.GetPatient().Patient.ParkedEntityID,
 						},
