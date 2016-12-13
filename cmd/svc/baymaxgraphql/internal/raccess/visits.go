@@ -12,10 +12,6 @@ import (
 )
 
 func (m *resourceAccessor) VisitLayout(ctx context.Context, req *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error) {
-	if !m.isAccountType(ctx, auth.AccountType_PROVIDER) {
-		return nil, errors.ErrNotAuthorized(ctx, req.ID)
-	}
-
 	res, err := m.layout.GetVisitLayout(ctx, req)
 	if grpc.Code(err) == codes.NotFound {
 		return nil, errors.ErrNotFound(ctx, req.ID)
@@ -26,9 +22,6 @@ func (m *resourceAccessor) VisitLayout(ctx context.Context, req *layout.GetVisit
 }
 
 func (m *resourceAccessor) VisitLayoutByVersion(ctx context.Context, req *layout.GetVisitLayoutByVersionRequest) (*layout.GetVisitLayoutByVersionResponse, error) {
-	if !m.isAccountType(ctx, auth.AccountType_PROVIDER) {
-		return nil, errors.ErrNotAuthorized(ctx, req.VisitLayoutVersionID)
-	}
 
 	res, err := m.layout.GetVisitLayoutByVersion(ctx, req)
 	if grpc.Code(err) == codes.NotFound {
