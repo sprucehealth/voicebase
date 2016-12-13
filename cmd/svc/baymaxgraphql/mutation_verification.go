@@ -178,8 +178,28 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 						}, nil
 					}
 				case *invite.LookupInviteResponse_Patient:
+
+					ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+						Key: &directory.LookupEntitiesRequest_EntityID{
+							EntityID: inv.GetPatient().Patient.ParkedEntityID,
+						},
+						RequestedInformation: &directory.RequestedInformation{
+							EntityInformation: []directory.EntityInformation{
+								directory.EntityInformation_CONTACTS,
+							},
+						},
+					})
+					if err != nil {
+						return nil, errors.InternalError(ctx, err)
+					}
+
+					contacts := directory.FilterContacts(ent, directory.ContactType_PHONE)
+					if len(contacts) == 0 {
+						return nil, errors.InternalError(ctx, errors.Errorf("no phone number for patient %s", ent.ID))
+					}
+
 					if inv.GetPatient().InviteVerificationRequirement == invite.VERIFICATION_REQUIREMENT_PHONE_MATCH {
-						if inv.GetPatient().Patient.PhoneNumber != pn.String() {
+						if contacts[0].Value != pn.String() {
 							return &verifyPhoneNumberOutput{
 								ClientMutationID: in.ClientMutationID,
 								Success:          false,

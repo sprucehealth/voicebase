@@ -252,7 +252,7 @@ func TestInvitePatients(t *testing.T) {
 				Value: &settings.Value_SingleSelect{
 					SingleSelect: &settings.SingleSelectValue{
 						Item: &settings.ItemValue{
-							ID: invite.PatientInviteChannelPreferenceSMS,
+							ID: invite.PatientInviteChannelPreferenceEmail,
 						},
 					},
 				},

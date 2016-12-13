@@ -308,12 +308,12 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 		var deliveryChannels []inviteDeliveryChannel
 		var verificationRequirement invite.InviteVerificationRequirement
 		if requirePhoneAndEmailForSecureConversationCreation.Value {
-			if !environment.IsProd() {
-				deliveryChannels = append(deliveryChannels, inviteDeliveryEmail)
-				verificationRequirement = invite.VERIFICATION_REQUIREMENT_PHONE_MATCH
-			} else {
+			if inviteDeliveryPreference.Item.ID == invite.PatientInviteChannelPreferenceSMS || environment.IsProd() {
 				deliveryChannels = append(deliveryChannels, inviteDeliverySMS)
 				verificationRequirement = invite.VERIFICATION_REQUIREMENT_EMAIL
+			} else {
+				deliveryChannels = append(deliveryChannels, inviteDeliveryEmail)
+				verificationRequirement = invite.VERIFICATION_REQUIREMENT_PHONE_MATCH
 			}
 		} else {
 			verificationRequirement = invite.VERIFICATION_REQUIREMENT_PHONE
