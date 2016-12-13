@@ -218,7 +218,8 @@ func (e *excommsService) ProvisionPhoneNumber(ctx context.Context, in *excomms.P
 				return nil, grpc.Errorf(codes.InvalidArgument, e.Message)
 			}
 		}
-		return nil, errors.Trace(err)
+		return nil, errors.Wrapf(err, "provision_for=%s area_code=%s phone_number=%s",
+			in.ProvisionFor, in.GetAreaCode(), in.GetPhoneNumber())
 	}
 
 	// record the fact that number has been purchased
@@ -227,7 +228,8 @@ func (e *excommsService) ProvisionPhoneNumber(ctx context.Context, in *excomms.P
 		Endpoint:       ipn.PhoneNumber,
 		EndpointType:   models.EndpointTypePhone,
 	}, in.UUID); err != nil {
-		return nil, errors.Trace(err)
+		return nil, errors.Wrapf(err, "provision_for=%s endpoint=%s endpoint_type=%s uuid=%q",
+			in.ProvisionFor, ipn.PhoneNumber, models.EndpointTypePhone, in.UUID)
 	}
 
 	events.Publish(e.sns, e.eventTopic, events.Service_EXCOMMS, &excomms.Event{
