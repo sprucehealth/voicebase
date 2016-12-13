@@ -190,12 +190,16 @@ var organizationType = graphql.NewObject(
 			},
 			"contacts": &graphql.Field{
 				Type: graphql.NewList(graphql.NewNonNull(contactInfoType)),
-				Resolve: apiaccess.Provider(func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					org := p.Source.(*models.Organization)
 					ram := raccess.ResourceAccess(p)
 					svc := serviceFromParams(p)
 					ctx := p.Context
 					acc := gqlctx.Account(ctx)
+
+					if acc.Type == auth.AccountType_PATIENT {
+						return nil, nil
+					}
 
 					// Get the entity for the account
 					ent, err := raccess.EntityInOrgForAccountID(ctx, ram, &directory.LookupEntitiesRequest{

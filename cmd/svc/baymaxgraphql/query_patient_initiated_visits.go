@@ -38,7 +38,7 @@ var visitLayoutListType = graphql.NewObject(
 )
 
 var visitLayoutsForPatientInitiatedVisitsQuery = &graphql.Field{
-	Type: visitListType,
+	Type: visitLayoutListType,
 	Args: graphql.FieldConfigArgument{
 		"organizationID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 	},
