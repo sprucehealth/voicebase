@@ -197,6 +197,9 @@ var organizationType = graphql.NewObject(
 					ctx := p.Context
 					acc := gqlctx.Account(ctx)
 
+					// Cannot add an authorization check for provider only
+					// because android app is querying for contacts
+					// at the organization level for a patient.
 					if acc.Type == auth.AccountType_PATIENT {
 						return nil, nil
 					}
