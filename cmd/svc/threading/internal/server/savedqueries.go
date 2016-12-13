@@ -22,7 +22,7 @@ func (s *threadsServer) rebuildSavedQuery(ctx context.Context, sq *models.SavedQ
 		return errors.Trace(s.dal.RemoveAllItemsFromSavedQueryIndex(ctx, sq.ID))
 	}
 
-	// The notifications saved query is handled specifically so ignore them here
+	// The notifications saved query is handled specifically so ignore them here test
 	if sq.Type != models.SavedQueryTypeNotifications {
 		forExternal := true
 		entIDs := make([]string, len(ents))
