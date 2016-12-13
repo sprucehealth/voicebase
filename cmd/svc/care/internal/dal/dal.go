@@ -175,6 +175,9 @@ func (d *dal) Visits(ctx context.Context, query *VisitQuery) ([]*models.Visit, e
 		vals = append(vals, *query.OrganizationID)
 	}
 
+	// always exclude deleted visits
+	whereClauses = append(whereClauses, " deleted = 0")
+
 	if query.ID != nil {
 		whereClauses = append(whereClauses, " id = ?")
 		vals = append(vals, *query.ID)
