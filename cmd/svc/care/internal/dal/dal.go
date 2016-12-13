@@ -181,7 +181,7 @@ func (d *dal) Visits(ctx context.Context, query *VisitQuery) ([]*models.Visit, e
 	}
 
 	if len(whereClauses) > 0 {
-		queryStmt += "WHERE " + strings.Join(whereClauses, " AND ")
+		queryStmt += " WHERE " + strings.Join(whereClauses, " AND ")
 	}
 
 	rows, err := d.db.Query(queryStmt, vals...)
