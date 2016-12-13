@@ -141,7 +141,7 @@ func (d *dal) Visit(ctx context.Context, id models.VisitID, opts ...QueryOption)
 	var visit models.Visit
 	visit.ID = models.EmptyVisitID()
 	row := d.db.QueryRow(`
-		SELECT id, name, layout_version_id, entity_id, creator_id, organization_id, submitted, created, submitted_timestamp, triaged, triaged_timestamp
+		SELECT id, name, layout_version_id, entity_id, creator_id, organization_id, submitted, created, submitted_timestamp, triaged, triaged_timestamp, patient_initiated
 		FROM visit
 		WHERE id = ?
 		AND deleted = 0`+forUpdate, id)
@@ -150,7 +150,7 @@ func (d *dal) Visit(ctx context.Context, id models.VisitID, opts ...QueryOption)
 }
 
 func (d *dal) Visits(ctx context.Context, query *VisitQuery) ([]*models.Visit, error) {
-	queryStmt := `SELECT id, name, layout_version_id, entity_id, creator_id, organization_id, submitted, created, submitted_timestamp, triaged, triaged_timestamp
+	queryStmt := `SELECT id, name, layout_version_id, entity_id, creator_id, organization_id, submitted, created, submitted_timestamp, triaged, triaged_timestamp, patient_initiated
 	FROM visit`
 
 	var whereClauses []string
@@ -217,7 +217,8 @@ func scanVisit(row dbutil.Scanner) (*models.Visit, error) {
 		&visit.Created,
 		&visit.SubmittedTimestamp,
 		&visit.Triaged,
-		&visit.TriagedTimestamp); err == sql.ErrNoRows {
+		&visit.TriagedTimestamp,
+		&visit.PatientInitiated); err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	} else if err != nil {
 		return nil, errors.Trace(err)

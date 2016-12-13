@@ -16,7 +16,7 @@ func (m *resourceAccessor) VisitLayout(ctx context.Context, req *layout.GetVisit
 	if grpc.Code(err) == codes.NotFound {
 		return nil, errors.ErrNotFound(ctx, req.ID)
 	} else if err != nil {
-		return nil, errors.InternalError(ctx, err)
+		return nil, errors.Trace(err)
 	}
 	return res, nil
 }
@@ -27,7 +27,7 @@ func (m *resourceAccessor) VisitLayoutByVersion(ctx context.Context, req *layout
 	if grpc.Code(err) == codes.NotFound {
 		return nil, errors.ErrNotFound(ctx, req.VisitLayoutVersionID)
 	} else if err != nil {
-		return nil, errors.InternalError(ctx, err)
+		return nil, errors.Trace(err)
 	}
 	return res, nil
 }
@@ -43,7 +43,7 @@ func (m *resourceAccessor) CreateVisit(ctx context.Context, req *care.CreateVisi
 
 	res, err := m.care.CreateVisit(ctx, req)
 	if err != nil {
-		return nil, errors.InternalError(ctx, err)
+		return nil, errors.Trace(err)
 	}
 
 	return res, nil
@@ -84,7 +84,7 @@ func (m *resourceAccessor) Visit(ctx context.Context, req *care.GetVisitRequest)
 func (m *resourceAccessor) Visits(ctx context.Context, req *care.GetVisitsRequest) (*care.GetVisitsResponse, error) {
 	res, err := m.care.GetVisits(ctx, req)
 	if err != nil {
-		return nil, errors.InternalError(ctx, err)
+		return nil, errors.Trace(err)
 	}
 
 	for _, visit := range res.Visits {
@@ -133,7 +133,7 @@ func (m *resourceAccessor) VisitLayoutVersion(ctx context.Context, req *layout.G
 	if grpc.Code(err) == codes.NotFound {
 		return nil, errors.ErrNotFound(ctx, req.ID)
 	} else if err != nil {
-		return nil, errors.InternalError(ctx, err)
+		return nil, errors.Trace(err)
 	}
 	return res, nil
 }
@@ -163,12 +163,12 @@ func (m *resourceAccessor) GetAnswersForVisit(ctx context.Context, req *care.Get
 		ID: req.VisitID,
 	})
 	if err != nil {
-		return nil, errors.InternalError(ctx, err)
+		return nil, errors.Trace(err)
 	}
 
 	res, err := m.care.GetAnswersForVisit(ctx, req)
 	if err != nil {
-		return nil, errors.InternalError(ctx, err)
+		return nil, errors.Trace(err)
 	}
 
 	return res, nil
