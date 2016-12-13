@@ -169,7 +169,7 @@ var ScheduledMessagesConfig = &settings.Config{
 var PatientInitiatedVisitsConfig = &settings.Config{
 	Title:          "Enable/disable patient initiated visits",
 	AllowSubkeys:   false,
-	Key:            ConfigKeyScheduledMessages,
+	Key:            ConfigKeyPatientInitiatedVisits,
 	Type:           settings.ConfigType_BOOLEAN,
 	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
 	Config: &settings.Config_Boolean{
