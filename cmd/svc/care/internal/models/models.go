@@ -4,6 +4,7 @@ import "time"
 
 type Visit struct {
 	ID                 VisitID
+	PatientInitiated   bool
 	Name               string
 	LayoutVersionID    string
 	EntityID           string

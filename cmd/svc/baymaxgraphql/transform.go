@@ -1090,6 +1090,7 @@ func transformVisitToResponse(ctx context.Context, ram raccess.ResourceAccessor,
 		Triaged:             visit.Triaged,
 		LayoutContainer:     string(containerData),
 		LayoutContainerType: layoutContainerType,
+		PatientInitiated:    visit.PatientInitiated,
 	}, nil
 }
 

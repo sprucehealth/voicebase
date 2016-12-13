@@ -625,12 +625,28 @@ func (m *ResourceAccessor) Visit(ctx context.Context, req *care.GetVisitRequest)
 	return rets[0].(*care.GetVisitResponse), mock.SafeError(rets[1])
 }
 
+func (m *ResourceAccessor) Visits(ctx context.Context, req *care.GetVisitsRequest) (*care.GetVisitsResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.GetVisitsResponse), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) SubmitVisit(ctx context.Context, req *care.SubmitVisitRequest) (*care.SubmitVisitResponse, error) {
 	rets := m.Record(req)
 	if len(rets) == 0 {
 		return nil, nil
 	}
 	return rets[0].(*care.SubmitVisitResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) DeleteVisit(ctx context.Context, req *care.DeleteVisitRequest) (*care.DeleteVisitResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.DeleteVisitResponse), mock.SafeError(rets[1])
 }
 
 func (m *ResourceAccessor) TriageVisit(ctx context.Context, req *care.TriageVisitRequest) (*care.TriageVisitResponse, error) {

@@ -121,6 +121,7 @@ type ResourceAccessor interface {
 	DeleteScheduledMessage(ctx context.Context, req *threading.DeleteScheduledMessageRequest) (*threading.DeleteScheduledMessageResponse, error)
 	DeleteSavedMessage(ctx context.Context, req *threading.DeleteSavedMessageRequest) (*threading.DeleteSavedMessageResponse, error)
 	DeleteThread(ctx context.Context, threadID, entityID string) error
+	DeleteVisit(ctx context.Context, req *care.DeleteVisitRequest) (*care.DeleteVisitResponse, error)
 	Entities(ctx context.Context, req *directory.LookupEntitiesRequest, opts ...EntityQueryOption) ([]*directory.Entity, error)
 	EntitiesByContact(ctx context.Context, req *directory.LookupEntitiesByContactRequest) ([]*directory.Entity, error)
 	EntityDomain(ctx context.Context, entityID, domain string) (*directory.LookupEntityDomainResponse, error)
@@ -176,6 +177,7 @@ type ResourceAccessor interface {
 	UpdateSavedQuery(ctx context.Context, req *threading.UpdateSavedQueryRequest) (*threading.UpdateSavedQueryResponse, error)
 	VerifiedValue(ctx context.Context, token string) (string, error)
 	Visit(ctx context.Context, req *care.GetVisitRequest) (*care.GetVisitResponse, error)
+	Visits(ctx context.Context, req *care.GetVisitsRequest) (*care.GetVisitsResponse, error)
 	VisitLayout(ctx context.Context, req *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error)
 	VisitLayoutByVersion(ctx context.Context, req *layout.GetVisitLayoutByVersionRequest) (*layout.GetVisitLayoutByVersionResponse, error)
 	VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error)
@@ -1252,147 +1254,6 @@ func (m *resourceAccessor) UpdateProfile(ctx context.Context, req *directory.Upd
 func (m *resourceAccessor) UpdateThread(ctx context.Context, req *threading.UpdateThreadRequest) (*threading.UpdateThreadResponse, error) {
 	// For authorization, the threading services validtes the actor entity ID against the members of the thread
 	return m.threading.UpdateThread(ctx, req)
-}
-
-func (m *resourceAccessor) VisitLayout(ctx context.Context, req *layout.GetVisitLayoutRequest) (*layout.GetVisitLayoutResponse, error) {
-	if !m.isAccountType(ctx, auth.AccountType_PROVIDER) {
-		return nil, errors.ErrNotAuthorized(ctx, req.ID)
-	}
-
-	res, err := m.layout.GetVisitLayout(ctx, req)
-	if grpc.Code(err) == codes.NotFound {
-		return nil, errors.ErrNotFound(ctx, req.ID)
-	} else if err != nil {
-		return nil, errors.InternalError(ctx, err)
-	}
-	return res, nil
-}
-
-func (m *resourceAccessor) VisitLayoutByVersion(ctx context.Context, req *layout.GetVisitLayoutByVersionRequest) (*layout.GetVisitLayoutByVersionResponse, error) {
-	if !m.isAccountType(ctx, auth.AccountType_PROVIDER) {
-		return nil, errors.ErrNotAuthorized(ctx, req.VisitLayoutVersionID)
-	}
-
-	res, err := m.layout.GetVisitLayoutByVersion(ctx, req)
-	if grpc.Code(err) == codes.NotFound {
-		return nil, errors.ErrNotFound(ctx, req.VisitLayoutVersionID)
-	} else if err != nil {
-		return nil, errors.InternalError(ctx, err)
-	}
-	return res, nil
-}
-
-func (m *resourceAccessor) CreateVisit(ctx context.Context, req *care.CreateVisitRequest) (*care.CreateVisitResponse, error) {
-	if !m.isAccountType(ctx, auth.AccountType_PROVIDER) {
-		return nil, errors.ErrNotAuthorized(ctx, req.LayoutVersionID)
-	}
-
-	if err := m.canAccessResource(ctx, req.EntityID, m.orgsForEntity); err != nil {
-		return nil, err
-	}
-
-	res, err := m.care.CreateVisit(ctx, req)
-	if err != nil {
-		return nil, errors.InternalError(ctx, err)
-	}
-
-	return res, nil
-}
-
-func (m *resourceAccessor) Visit(ctx context.Context, req *care.GetVisitRequest) (*care.GetVisitResponse, error) {
-	// first get the visit then check whether or not caller can access resource
-	res, err := m.care.GetVisit(ctx, req)
-	if err != nil {
-		if grpc.Code(err) == codes.NotFound {
-			return nil, errors.ErrNotFound(ctx, req.ID)
-		}
-
-		return nil, errors.InternalError(ctx, err)
-	}
-
-	if err := m.canAccessResource(ctx, res.Visit.EntityID, m.orgsForEntity); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-func (m *resourceAccessor) SubmitVisit(ctx context.Context, req *care.SubmitVisitRequest) (*care.SubmitVisitResponse, error) {
-	_, err := m.Visit(ctx, &care.GetVisitRequest{
-		ID: req.VisitID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if !m.isAccountType(ctx, auth.AccountType_PATIENT) {
-		return nil, errors.ErrNotAuthorized(ctx, req.VisitID)
-	}
-
-	return m.care.SubmitVisit(ctx, req)
-}
-
-func (m *resourceAccessor) TriageVisit(ctx context.Context, req *care.TriageVisitRequest) (*care.TriageVisitResponse, error) {
-	// helper method does the auth check
-	_, err := m.Visit(ctx, &care.GetVisitRequest{
-		ID: req.VisitID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if !m.isAccountType(ctx, auth.AccountType_PATIENT) {
-		return nil, errors.ErrNotAuthorized(ctx, req.VisitID)
-	}
-
-	return m.care.TriageVisit(ctx, req)
-}
-
-func (m *resourceAccessor) VisitLayoutVersion(ctx context.Context, req *layout.GetVisitLayoutVersionRequest) (*layout.GetVisitLayoutVersionResponse, error) {
-
-	res, err := m.layout.GetVisitLayoutVersion(ctx, req)
-	if grpc.Code(err) == codes.NotFound {
-		return nil, errors.ErrNotFound(ctx, req.ID)
-	} else if err != nil {
-		return nil, errors.InternalError(ctx, err)
-	}
-	return res, nil
-}
-
-func (m *resourceAccessor) CreateVisitAnswers(ctx context.Context, req *care.CreateVisitAnswersRequest) (*care.CreateVisitAnswersResponse, error) {
-	// only the patient can submit answers
-	if !m.isAccountType(ctx, auth.AccountType_PATIENT) {
-		return nil, errors.ErrNotAuthorized(ctx, req.VisitID)
-	}
-
-	if err := m.canAccessResource(ctx, req.ActorEntityID, m.orgsForEntity); err != nil {
-		return nil, err
-	}
-
-	res, err := m.care.CreateVisitAnswers(ctx, req)
-	if err != nil {
-		if grpc.Code(err) == codes.NotFound {
-			return nil, errors.ErrNotFound(ctx, req.VisitID)
-		}
-		return nil, err
-	}
-	return res, nil
-}
-
-func (m *resourceAccessor) GetAnswersForVisit(ctx context.Context, req *care.GetAnswersForVisitRequest) (*care.GetAnswersForVisitResponse, error) {
-	_, err := m.Visit(ctx, &care.GetVisitRequest{
-		ID: req.VisitID,
-	})
-	if err != nil {
-		return nil, errors.InternalError(ctx, err)
-	}
-
-	res, err := m.care.GetAnswersForVisit(ctx, req)
-	if err != nil {
-		return nil, errors.InternalError(ctx, err)
-	}
-
-	return res, nil
 }
 
 func (m *resourceAccessor) LookupExternalLinksForEntity(ctx context.Context, req *directory.LookupExternalLinksForEntityRequest) (*directory.LookupExternalLinksforEntityResponse, error) {

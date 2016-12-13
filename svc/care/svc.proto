@@ -25,6 +25,7 @@ message Visit {
 	}
 	Preference preferences = 9;
 	uint64 submitted_timestamp = 10;
+	bool patient_initiated = 11;
 }
 
 
@@ -123,11 +124,19 @@ message CreateVisitRequest {
 	string name = 3;
 	string organization_id = 4 [(gogoproto.customname) = "OrganizationID"];
 	string creator_id = 5 [(gogoproto.customname) = "CreatorID"];
+	bool patient_initiated = 6;
 }
 
 message CreateVisitResponse {
 	Visit visit = 1;
 }
+
+message DeleteVisitRequest {
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string actor_entity_id = 2 [(gogoproto.customname) = "ActorEntityID"];
+}
+
+message DeleteVisitResponse {}
 
 message GetVisitRequest {
 	string id = 1 [(gogoproto.customname) = "ID"];
@@ -291,9 +300,27 @@ message SearchAllergyMedicationsResponse {
 	repeated string results = 1;
 }
 
+message GetVisitsRequest {
+	bool patient_initiated = 1;
+	bool draft = 2;
+	string organization_id = 3 [(gogoproto.customname) = "OrganizationID"];
+
+	oneof query {
+		string creator_id = 10 [(gogoproto.customname) = "CreatorID"];
+		string id = 11 [(gogoproto.customname) = "ID"];
+	}
+}
+
+message GetVisitsResponse {
+	repeated Visit visits = 1;
+}
+
 service Care {
 	rpc CreateVisit(CreateVisitRequest) returns (CreateVisitResponse);
+	rpc DeleteVisit(DeleteVisitRequest) returns (DeleteVisitResponse);
+	//DEPRECATED: Use GetVisits instead.
 	rpc GetVisit(GetVisitRequest) returns (GetVisitResponse);
+	rpc GetVisits(GetVisitsRequest) returns (GetVisitsResponse);
 	rpc CreateVisitAnswers(CreateVisitAnswersRequest) returns (CreateVisitAnswersResponse);
 	rpc GetAnswersForVisit(GetAnswersForVisitRequest) returns (GetAnswersForVisitResponse);
 	rpc SubmitVisit(SubmitVisitRequest) returns (SubmitVisitResponse);

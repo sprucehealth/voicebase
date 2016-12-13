@@ -62,11 +62,12 @@ func (s *server) CreateVisit(ctx context.Context, in *care.CreateVisitRequest) (
 	}
 
 	visitToCreate := &models.Visit{
-		Name:            in.Name,
-		LayoutVersionID: in.LayoutVersionID,
-		EntityID:        in.EntityID,
-		OrganizationID:  in.OrganizationID,
-		CreatorID:       in.CreatorID,
+		Name:             in.Name,
+		LayoutVersionID:  in.LayoutVersionID,
+		EntityID:         in.EntityID,
+		OrganizationID:   in.OrganizationID,
+		CreatorID:        in.CreatorID,
+		PatientInitiated: in.PatientInitiated,
 	}
 
 	_, err := s.dal.CreateVisit(ctx, visitToCreate)
@@ -124,6 +125,76 @@ func (s *server) GetVisit(ctx context.Context, in *care.GetVisitRequest) (*care.
 	return &care.GetVisitResponse{
 		Visit: transformVisitToResponse(v, optionalTriageValue),
 	}, nil
+}
+
+func (s *server) GetVisits(ctx context.Context, in *care.GetVisitsRequest) (*care.GetVisitsResponse, error) {
+	var visitQuery dal.VisitQuery
+	switch q := in.Query.(type) {
+	case *care.GetVisitsRequest_CreatorID:
+		visitQuery.CreatorID = &q.CreatorID
+		if in.OrganizationID == "" {
+			return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationID required")
+		}
+	case *care.GetVisitsRequest_ID:
+		visitQuery.ID = &q.ID
+	default:
+		return nil, errors.Errorf("Unknown type for querying visits %T", in.Query)
+	}
+
+	visitQuery.Draft = &in.Draft
+	visitQuery.PatientInitiated = &in.PatientInitiated
+	visitQuery.OrganizationID = &in.OrganizationID
+
+	visits, err := s.dal.Visits(ctx, &visitQuery)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	organizationID := in.OrganizationID
+	if len(visits) == 1 && organizationID == "" {
+		organizationID = visits[0].OrganizationID
+	}
+
+	optionalTriageValue, err := settings.GetBooleanValue(ctx, s.settings, &settings.GetValuesRequest{
+		NodeID: organizationID,
+		Keys: []*settings.ConfigKey{
+			{
+				Key: caresettings.ConfigKeyOptionalTriage,
+			},
+		},
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	transformedVisits := make([]*care.Visit, len(visits))
+	for i, visit := range visits {
+		transformedVisits[i] = transformVisitToResponse(visit, optionalTriageValue)
+	}
+
+	return &care.GetVisitsResponse{
+		Visits: transformedVisits,
+	}, nil
+}
+
+func (s *server) DeleteVisit(ctx context.Context, in *care.DeleteVisitRequest) (*care.DeleteVisitResponse, error) {
+	if in.ID == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "visitID required")
+	}
+
+	visitID, err := models.ParseVisitID(in.ID)
+	if err != nil {
+		return nil, grpc.Errorf(codes.InvalidArgument, "cannot parse %s as visitID: %s", in.ID, err)
+	}
+
+	if _, err := s.dal.UpdateVisit(ctx, visitID, &dal.VisitUpdate{
+		Deleted:     ptr.Bool(true),
+		DeletedTime: ptr.Time(s.clk.Now()),
+	}); err != nil {
+		return nil, errors.Errorf("Unable to delete visit %s: %s", in.ID, err)
+	}
+
+	return &care.DeleteVisitResponse{}, nil
 }
 
 func (s *server) SubmitVisit(ctx context.Context, in *care.SubmitVisitRequest) (*care.SubmitVisitResponse, error) {

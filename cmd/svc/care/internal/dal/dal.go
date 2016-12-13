@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"context"
@@ -20,6 +21,16 @@ type VisitUpdate struct {
 	SubmittedTime *time.Time
 	Triaged       *bool
 	TriagedTime   *time.Time
+	Deleted       *bool
+	DeletedTime   *time.Time
+}
+
+type VisitQuery struct {
+	CreatorID        *string
+	ID               *string
+	OrganizationID   *string
+	Draft            *bool
+	PatientInitiated *bool
 }
 
 type CarePlanUpdate struct {
@@ -37,6 +48,7 @@ type DAL interface {
 	UpdateCarePlan(ctx context.Context, id models.CarePlanID, update *CarePlanUpdate) (int64, error)
 	UpdateVisit(ctx context.Context, id models.VisitID, update *VisitUpdate) (int64, error)
 	Visit(ctx context.Context, id models.VisitID, opts ...QueryOption) (*models.Visit, error)
+	Visits(ctx context.Context, query *VisitQuery) ([]*models.Visit, error)
 	DeleteVisitAnswers(ctx context.Context, visitID models.VisitID, questionIDs []string) (int64, error)
 	VisitAnswers(ctx context.Context, visitID models.VisitID, questionIDs []string) (map[string]*models.Answer, error)
 }
@@ -110,7 +122,8 @@ func (d *dal) CreateVisit(ctx context.Context, visit *models.Visit) (models.Visi
 		return models.EmptyVisitID(), errors.Trace(err)
 	}
 
-	_, err = d.db.Exec(`INSERT INTO visit (id, name, layout_version_id, entity_id, creator_id, organization_id) VALUES (?,?,?,?,?,?)`, id, visit.Name, visit.LayoutVersionID, visit.EntityID, visit.CreatorID, visit.OrganizationID)
+	_, err = d.db.Exec(`INSERT INTO visit (id, name, layout_version_id, entity_id, creator_id, organization_id, patient_initiated) 
+		VALUES (?,?,?,?,?,?,?)`, id, visit.Name, visit.LayoutVersionID, visit.EntityID, visit.CreatorID, visit.OrganizationID, visit.PatientInitiated)
 	if err != nil {
 		return models.EmptyVisitID(), errors.Trace(err)
 	}
@@ -127,10 +140,73 @@ func (d *dal) Visit(ctx context.Context, id models.VisitID, opts ...QueryOption)
 	}
 	var visit models.Visit
 	visit.ID = models.EmptyVisitID()
-	if err := d.db.QueryRow(`
+	row := d.db.QueryRow(`
 		SELECT id, name, layout_version_id, entity_id, creator_id, organization_id, submitted, created, submitted_timestamp, triaged, triaged_timestamp
 		FROM visit
-		WHERE id = ?`+forUpdate, id).Scan(
+		WHERE id = ?
+		AND deleted = 0`+forUpdate, id)
+
+	return scanVisit(row)
+}
+
+func (d *dal) Visits(ctx context.Context, query *VisitQuery) ([]*models.Visit, error) {
+	queryStmt := `SELECT id, name, layout_version_id, entity_id, creator_id, organization_id, submitted, created, submitted_timestamp, triaged, triaged_timestamp
+	FROM visit`
+
+	var whereClauses []string
+	var vals []interface{}
+	if query.Draft != nil && *query.Draft {
+		whereClauses = append(whereClauses, " submitted = ?")
+		vals = append(vals, !*query.Draft)
+	}
+
+	if query.CreatorID != nil {
+		whereClauses = append(whereClauses, " creator_id = ?")
+		vals = append(vals, *query.CreatorID)
+	}
+
+	if query.PatientInitiated != nil {
+		whereClauses = append(whereClauses, " patient_initiated = ?")
+		vals = append(vals, *query.PatientInitiated)
+	}
+
+	if query.OrganizationID != nil {
+		whereClauses = append(whereClauses, " organization_id = ?")
+		vals = append(vals, *query.OrganizationID)
+	}
+
+	if query.ID != nil {
+		whereClauses = append(whereClauses, " id = ?")
+		vals = append(vals, *query.ID)
+	}
+
+	if len(whereClauses) > 0 {
+		queryStmt += "WHERE " + strings.Join(whereClauses, " AND ")
+	}
+
+	rows, err := d.db.Query(queryStmt, vals...)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var visits []*models.Visit
+	for rows.Next() {
+		visit, err := scanVisit(rows)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+
+		visits = append(visits, visit)
+	}
+
+	return visits, nil
+}
+
+func scanVisit(row dbutil.Scanner) (*models.Visit, error) {
+	var visit models.Visit
+	visit.ID = models.EmptyVisitID()
+	if err := row.Scan(
 		&visit.ID,
 		&visit.Name,
 		&visit.LayoutVersionID,
@@ -163,6 +239,12 @@ func (d *dal) UpdateVisit(ctx context.Context, id models.VisitID, update *VisitU
 	}
 	if update.TriagedTime != nil {
 		args.Append("triaged_timestamp", *update.TriagedTime)
+	}
+	if update.Deleted != nil {
+		args.Append("deleted", *update.Deleted)
+	}
+	if update.DeletedTime != nil {
+		args.Append("deleted_timestamp", *update.DeletedTime)
 	}
 
 	if args.IsEmpty() {

@@ -5,9 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/dal"
 	dalmock "github.com/sprucehealth/backend/cmd/svc/care/internal/dal/mock"
 	"github.com/sprucehealth/backend/cmd/svc/care/internal/models"
+	caresettings "github.com/sprucehealth/backend/cmd/svc/care/settings"
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/dosespot"
@@ -20,6 +22,8 @@ import (
 	layoutmock "github.com/sprucehealth/backend/svc/layout/mock"
 	"github.com/sprucehealth/backend/svc/media"
 	mediamock "github.com/sprucehealth/backend/svc/media/mock"
+	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/backend/svc/settings/settingsmock"
 )
 
 func init() {
@@ -338,6 +342,80 @@ func TestTriageVisit(t *testing.T) {
 
 	_, err = srv.TriageVisit(context.Background(), &care.TriageVisitRequest{
 		VisitID: visitID.String(),
+	})
+	test.OK(t, err)
+}
+
+func TestDeleteVisit(t *testing.T) {
+	t.Parallel()
+	dalMock := dalmock.New(t)
+	defer dalMock.Finish()
+
+	mclk := clock.NewManaged(time.Now())
+
+	visitID, err := models.NewVisitID()
+	test.OK(t, err)
+
+	dalMock.Expect(mock.NewExpectation(dalMock.UpdateVisit, visitID, &dal.VisitUpdate{
+		Deleted:     ptr.Bool(true),
+		DeletedTime: ptr.Time(mclk.Now()),
+	}).WithReturns(int64(1), nil))
+
+	srv := New(dalMock, nil, nil, nil, nil, nil, mclk)
+
+	_, err = srv.DeleteVisit(context.Background(), &care.DeleteVisitRequest{
+		ID:            visitID.String(),
+		ActorEntityID: "entity_id",
+	})
+	test.OK(t, err)
+}
+
+func TestGetVisits_PatientInitiated(t *testing.T) {
+	t.Parallel()
+	dalMock := dalmock.New(t)
+	defer dalMock.Finish()
+
+	ctrl := gomock.NewController(t)
+	settingsMock := settingsmock.NewMockSettingsClient(ctrl)
+	defer ctrl.Finish()
+
+	settingsMock.EXPECT().GetValues(context.Background(), &settings.GetValuesRequest{
+		Keys: []*settings.ConfigKey{
+			{
+				Key: caresettings.ConfigKeyOptionalTriage,
+			},
+		},
+		NodeID: "org_id",
+	}).Return(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: false,
+					},
+				},
+			},
+		},
+	}, nil)
+
+	mclk := clock.NewManaged(time.Now())
+
+	dalMock.Expect(mock.NewExpectation(dalMock.Visits, &dal.VisitQuery{
+		CreatorID:        ptr.String("creator_id"),
+		Draft:            ptr.Bool(true),
+		PatientInitiated: ptr.Bool(true),
+		OrganizationID:   ptr.String("org_id"),
+	}).WithReturns(([]*models.Visit)(nil), nil))
+
+	srv := New(dalMock, nil, settingsMock, nil, nil, nil, mclk)
+
+	_, err := srv.GetVisits(context.Background(), &care.GetVisitsRequest{
+		PatientInitiated: true,
+		Draft:            true,
+		OrganizationID:   "org_id",
+		Query: &care.GetVisitsRequest_CreatorID{
+			CreatorID: "creator_id",
+		},
 	})
 	test.OK(t, err)
 }

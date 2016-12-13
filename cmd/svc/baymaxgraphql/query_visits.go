@@ -101,6 +101,10 @@ var visitType = graphql.NewObject(
 				Type:        graphql.NewNonNull(layoutContainerType),
 				Description: "Type of layout contained within layout container",
 			},
+			"patientInitiated": &graphql.Field{
+				Type:        graphql.NewNonNull(graphql.Boolean),
+				Description: "Indicates whether or not the visit was initiated by the patient",
+			},
 		},
 	},
 )

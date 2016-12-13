@@ -178,9 +178,10 @@ var submitVisitMutation = &graphql.Field{
 					Event:  "visit-submitted",
 					UserId: acc.ID,
 					Properties: map[string]interface{}{
-						"organization_id": thread.OrganizationID,
-						"thread_id":       thread.ID,
-						"visit_layout_id": visitRes.Visit.LayoutVersionID,
+						"organization_id":   thread.OrganizationID,
+						"thread_id":         thread.ID,
+						"visit_layout_id":   visitRes.Visit.LayoutVersionID,
+						"patient_initiated": visitRes.Visit.PatientInitiated,
 					},
 				})
 

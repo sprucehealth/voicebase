@@ -187,6 +187,7 @@ func main() {
 	}
 	patientSyncClient := patientsync.NewPatientSyncClient(conn)
 
+	baymaxgraphqlsettings.PatientInitiatedVisitsConfig.GetBoolean().Default.Value = !environment.IsProd()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	_, err = settings.RegisterConfigs(
 		ctx,
@@ -201,6 +202,7 @@ func main() {
 			baymaxgraphqlsettings.VideoCallingConfig,
 			baymaxgraphqlsettings.PaymentsConfig,
 			baymaxgraphqlsettings.ScheduledMessagesConfig,
+			baymaxgraphqlsettings.PatientInitiatedVisitsConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())

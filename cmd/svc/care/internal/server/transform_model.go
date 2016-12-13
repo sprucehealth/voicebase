@@ -29,6 +29,7 @@ func transformVisitToResponse(v *models.Visit, optionalTriage *settings.BooleanV
 		LayoutVersionID:    v.LayoutVersionID,
 		EntityID:           v.EntityID,
 		OrganizationID:     v.OrganizationID,
+		PatientInitiated:   v.PatientInitiated,
 		Preferences: &care.Visit_Preference{
 			OptionalTriage: optionalTriage.Value,
 		},

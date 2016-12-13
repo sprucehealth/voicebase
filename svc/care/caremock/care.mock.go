@@ -95,6 +95,22 @@ func (_mr *_MockCareClientRecorder) CreateVisitAnswers(arg0, arg1 interface{}, a
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CreateVisitAnswers", _s...)
 }
 
+func (_m *MockCareClient) DeleteVisit(_param0 context.Context, _param1 *care.DeleteVisitRequest, _param2 ...grpc.CallOption) (*care.DeleteVisitResponse, error) {
+	_s := []interface{}{_param0, _param1}
+	for _, _x := range _param2 {
+		_s = append(_s, _x)
+	}
+	ret := _m.ctrl.Call(_m, "DeleteVisit", _s...)
+	ret0, _ := ret[0].(*care.DeleteVisitResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockCareClientRecorder) DeleteVisit(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	_s := append([]interface{}{arg0, arg1}, arg2...)
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "DeleteVisit", _s...)
+}
+
 func (_m *MockCareClient) GetAnswersForVisit(_param0 context.Context, _param1 *care.GetAnswersForVisitRequest, _param2 ...grpc.CallOption) (*care.GetAnswersForVisitResponse, error) {
 	_s := []interface{}{_param0, _param1}
 	for _, _x := range _param2 {
@@ -125,6 +141,22 @@ func (_m *MockCareClient) GetVisit(_param0 context.Context, _param1 *care.GetVis
 func (_mr *_MockCareClientRecorder) GetVisit(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	_s := append([]interface{}{arg0, arg1}, arg2...)
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetVisit", _s...)
+}
+
+func (_m *MockCareClient) GetVisits(_param0 context.Context, _param1 *care.GetVisitsRequest, _param2 ...grpc.CallOption) (*care.GetVisitsResponse, error) {
+	_s := []interface{}{_param0, _param1}
+	for _, _x := range _param2 {
+		_s = append(_s, _x)
+	}
+	ret := _m.ctrl.Call(_m, "GetVisits", _s...)
+	ret0, _ := ret[0].(*care.GetVisitsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockCareClientRecorder) GetVisits(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	_s := append([]interface{}{arg0, arg1}, arg2...)
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetVisits", _s...)
 }
 
 func (_m *MockCareClient) SearchAllergyMedications(_param0 context.Context, _param1 *care.SearchAllergyMedicationsRequest, _param2 ...grpc.CallOption) (*care.SearchAllergyMedicationsResponse, error) {

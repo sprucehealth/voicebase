@@ -79,6 +79,16 @@ func (m *mockDAL) Visit(ctx context.Context, id models.VisitID, opts ...dal.Quer
 	return rets[0].(*models.Visit), mock.SafeError(rets[1])
 }
 
+func (m *mockDAL) Visits(ctx context.Context, query *dal.VisitQuery) ([]*models.Visit, error) {
+	rets := m.Record(query)
+
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].([]*models.Visit), mock.SafeError(rets[1])
+}
+
 func (m *mockDAL) UpdateVisit(ctx context.Context, id models.VisitID, update *dal.VisitUpdate) (int64, error) {
 	rets := m.Record(id, update)
 	if len(rets) == 0 {

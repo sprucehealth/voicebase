@@ -342,6 +342,10 @@ type VisitCategory struct {
 	Name string `json:"name"`
 }
 
+type VisitLayoutList struct {
+	Items []*VisitLayout `json:"items"`
+}
+
 type VisitLayout struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
@@ -364,6 +368,11 @@ type Visit struct {
 	LayoutContainer     string `json:"layoutContainer"`
 	LayoutContainerType string `json:"layoutContainerType"`
 	EntityID            string `json:"-"`
+	PatientInitiated    bool   `json:"patientInitiated"`
+}
+
+type VisitList struct {
+	Items []*Visit `json:"items"`
 }
 
 type CarePlan struct {

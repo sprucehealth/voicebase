@@ -12,6 +12,7 @@ const (
 	ConfigKeyVisitAttachments         = "visit_attachments_enabled"
 	ConfigKeyPayments                 = "payments_enabled"
 	ConfigKeyScheduledMessages        = "scheduled_messages_enabled"
+	ConfigKeyPatientInitiatedVisits   = "patient_initiated_vistis"
 )
 
 // TeamConversationsConfig represents the config controlling whether or not team conversations is enabled at the org level
@@ -158,6 +159,23 @@ var ScheduledMessagesConfig = &settings.Config{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
 				Value: true,
+			},
+		},
+	},
+}
+
+// PatientInitiatedVisitsConfig represents the config controlling whether or not
+// a patient can initiate a visit
+var PatientInitiatedVisitsConfig = &settings.Config{
+	Title:          "Enable/disable patient initiated visits",
+	AllowSubkeys:   false,
+	Key:            ConfigKeyScheduledMessages,
+	Type:           settings.ConfigType_BOOLEAN,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	Config: &settings.Config_Boolean{
+		Boolean: &settings.BooleanConfig{
+			Default: &settings.BooleanValue{
+				Value: false,
 			},
 		},
 	},

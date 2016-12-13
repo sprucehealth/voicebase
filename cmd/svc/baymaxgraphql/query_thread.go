@@ -151,6 +151,28 @@ var threadType = graphql.NewObject(
 					return booleanValue.Value, nil
 				}),
 			},
+			"allowPatientInitiatedVisits": &graphql.Field{
+				Type: graphql.NewNonNull(graphql.Boolean),
+				Resolve: apiaccess.Patient(func(p graphql.ResolveParams) (interface{}, error) {
+					svc := serviceFromParams(p)
+					ctx := p.Context
+					th := p.Source.(*models.Thread)
+
+					booleanValue, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
+						NodeID: th.OrganizationID,
+						Keys: []*settings.ConfigKey{
+							{
+								Key: baymaxgraphqlsettings.ConfigKeyPatientInitiatedVisits,
+							},
+						},
+					})
+					if err != nil {
+						return false, errors.InternalError(ctx, err)
+					}
+
+					return booleanValue.Value, nil
+				}),
+			},
 			"allowPaymentRequestAttachments": &graphql.Field{
 				Type:    graphql.NewNonNull(graphql.Boolean),
 				Resolve: apiaccess.Authenticated(resolveAllowPaymentRequestAttachments),

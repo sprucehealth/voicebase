@@ -46,6 +46,14 @@ func (c *Client) CreateVisit(ctx context.Context, in *care.CreateVisitRequest, o
 	return rets[0].(*care.CreateVisitResponse), mock.SafeError(rets[1])
 }
 
+func (c *Client) DeleteVisit(ctx context.Context, in *care.DeleteVisitRequest, opts ...grpc.CallOption) (*care.DeleteVisitResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*care.DeleteVisitResponse), mock.SafeError(rets[1])
+}
+
 func (c *Client) GetVisit(ctx context.Context, in *care.GetVisitRequest, opts ...grpc.CallOption) (*care.GetVisitResponse, error) {
 	rets := c.Record(in)
 	if len(rets) == 0 {
@@ -53,6 +61,15 @@ func (c *Client) GetVisit(ctx context.Context, in *care.GetVisitRequest, opts ..
 	}
 
 	return rets[0].(*care.GetVisitResponse), mock.SafeError(rets[1])
+}
+
+func (c *Client) GetVisits(ctx context.Context, in *care.GetVisitsRequest, opts ...grpc.CallOption) (*care.GetVisitsResponse, error) {
+	rets := c.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*care.GetVisitsResponse), mock.SafeError(rets[1])
 }
 
 func (c *Client) CreateVisitAnswers(ctx context.Context, in *care.CreateVisitAnswersRequest, opts ...grpc.CallOption) (*care.CreateVisitAnswersResponse, error) {
