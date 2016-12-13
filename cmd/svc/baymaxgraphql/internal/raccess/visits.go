@@ -33,10 +33,6 @@ func (m *resourceAccessor) VisitLayoutByVersion(ctx context.Context, req *layout
 }
 
 func (m *resourceAccessor) CreateVisit(ctx context.Context, req *care.CreateVisitRequest) (*care.CreateVisitResponse, error) {
-	if !m.isAccountType(ctx, auth.AccountType_PATIENT) {
-		return nil, errors.ErrNotAuthorized(ctx, req.LayoutVersionID)
-	}
-
 	if err := m.canAccessResource(ctx, req.EntityID, m.orgsForEntity); err != nil {
 		return nil, errors.Trace(err)
 	}
