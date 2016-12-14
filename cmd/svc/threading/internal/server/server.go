@@ -1750,8 +1750,14 @@ func (s *threadsServer) UpdateSavedQuery(ctx context.Context, in *threading.Upda
 	}
 	rebuild := in.ForceRebuild
 	update := &dal.SavedQueryUpdate{}
-	if in.Title != "" {
-		update.Title = &in.Title
+	if in.ShortTitle != "" {
+		update.ShortTitle = &in.ShortTitle
+	}
+	if in.LongTitle != "" {
+		update.LongTitle = &in.LongTitle
+	}
+	if in.Description != "" {
+		update.Description = &in.Description
 	}
 	if in.Ordinal > 0 {
 		update.Ordinal = ptr.Int(int(in.Ordinal))

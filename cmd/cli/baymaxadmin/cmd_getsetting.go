@@ -80,6 +80,8 @@ func (c *getSettingCmd) run(args []string) error {
 			fmt.Printf(" = %t\n", v.GetBoolean().Value)
 		case settings.ConfigType_INTEGER:
 			fmt.Printf(" = %d\n", v.GetInteger().Value)
+		case settings.ConfigType_TEXT:
+			fmt.Printf(" = %q\n", v.GetText().Value)
 		case settings.ConfigType_SINGLE_SELECT:
 			item := v.GetSingleSelect().Item
 			fmt.Printf(" = [%s] %s\n", item.ID, item.FreeTextResponse)

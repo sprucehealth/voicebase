@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/threading"
 )
@@ -238,4 +239,53 @@ func TransformReferenceToModel(r *threading.Reference) *Reference {
 		ID:   r.ID,
 		Type: r.Type.String(),
 	}
+}
+
+// SavedThreadQuery is a saved thread query of the threading service
+type SavedThreadQuery struct {
+	ID                   string `json:"id"`
+	Query                string `json:"query"`
+	ShortTitle           string `json:"shortTitle"`
+	LongTitle            string `json:"longTitle"`
+	Description          string `json:"description"`
+	Unread               int    `json:"unread"`
+	Total                int    `json:"total"`
+	Ordinal              int    `json:"ordinal"`
+	NotificationsEnabled bool   `json:"notificationsEnabled"`
+	Hidden               bool   `json:"hidden"`
+	Template             bool   `json:"template"`
+}
+
+// TransformSavedThreadQueriesToModel transforms a set of internal saved thread queries into something understood by graphql
+func TransformSavedThreadQueriesToModel(sqs []*threading.SavedQuery) ([]*SavedThreadQuery, error) {
+	rsqs := make([]*SavedThreadQuery, len(sqs))
+	for i, sq := range sqs {
+		var err error
+		rsqs[i], err = TransformSavedThreadQueryToModel(sq)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	}
+	return rsqs, nil
+}
+
+// TransformSavedThreadQueryToModel transforms an internal saved thread query into something understood by graphql
+func TransformSavedThreadQueryToModel(sm *threading.SavedQuery) (*SavedThreadQuery, error) {
+	query, err := threading.FormatQuery(sm.Query)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &SavedThreadQuery{
+		ID:                   sm.ID,
+		Query:                query,
+		ShortTitle:           sm.ShortTitle,
+		LongTitle:            sm.LongTitle,
+		Description:          sm.Description,
+		Unread:               int(sm.Unread),
+		Total:                int(sm.Total),
+		Ordinal:              int(sm.Ordinal),
+		NotificationsEnabled: sm.NotificationsEnabled,
+		Hidden:               sm.Hidden,
+		Template:             sm.Template,
+	}, nil
 }

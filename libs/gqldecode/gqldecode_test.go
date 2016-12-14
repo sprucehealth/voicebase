@@ -7,26 +7,32 @@ import (
 
 func TestSimple(t *testing.T) {
 	input := map[string]interface{}{
-		"name":     "Gob",
-		"age":      45,
-		"person":   true,
-		"keywords": []interface{}{"blacklisted", "magician"},
+		"name":         "Gob",
+		"age":          45,
+		"person":       true,
+		"keywords":     []interface{}{"blacklisted", "magician"},
+		"optStringSet": "foo",
 	}
 	type simpleStruct struct {
-		Name     string   `gql:"name"`
-		Age      int      `gql:"age"`
-		Person   bool     `gql:"person"`
-		Keywords []string `gql:"keywords"`
+		Name            string   `gql:"name"`
+		Age             int      `gql:"age"`
+		Person          bool     `gql:"person"`
+		Keywords        []string `gql:"keywords"`
+		OptStringSet    *string  `gql:"optStringSet"`
+		OptStringNotSet *string  `gql:"optStringNotSet"`
 	}
 	var st simpleStruct
 	if err := Decode(input, &st); err != nil {
 		t.Fatal(err)
 	}
+	foo := "foo"
 	exp := simpleStruct{
-		Name:     "Gob",
-		Age:      45,
-		Person:   true,
-		Keywords: []string{"blacklisted", "magician"},
+		Name:            "Gob",
+		Age:             45,
+		Person:          true,
+		Keywords:        []string{"blacklisted", "magician"},
+		OptStringSet:    &foo,
+		OptStringNotSet: nil,
 	}
 	if !reflect.DeepEqual(exp, st) {
 		t.Fatalf("Expected %+v got %+v", exp, st)

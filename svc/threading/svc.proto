@@ -429,10 +429,12 @@ enum NotificationsEnabledUpdate {
 message UpdateSavedQueryRequest {
 	string saved_query_id = 1 [(gogoproto.customname) = "SavedQueryID"];
 	Query query = 2;
-	string title = 3;
+	string short_title = 3;
 	int32 ordinal = 4;
 	bool force_rebuild = 5; // If true then force rebuilding the saved query index even if the query doesn't change
 	NotificationsEnabledUpdate notifications_enabled = 6;
+	string long_title = 7;
+	string description = 8;
 }
 
 message UpdateSavedQueryResponse {
