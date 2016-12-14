@@ -251,9 +251,6 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 	if in.OrganizationEntityID == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationEntityID is required")
 	}
-	if in.InviterEntityID == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "InviterEntityID is required")
-	}
 	// Validate all patient information
 	for _, p := range in.Patients {
 		if p.PhoneNumber == "" {
