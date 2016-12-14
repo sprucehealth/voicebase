@@ -152,8 +152,8 @@ var invitePatientsMutation = &graphql.Field{
 				// Do all our validation in 1 pass
 				for _, p := range patientsInput {
 					m := p.(map[string]interface{})
-					email := m["email"].(string)
-					phoneNumber := m["phoneNumber"].(string)
+					email, _ := m["email"].(string)
+					phoneNumber, _ := m["phoneNumber"].(string)
 
 					var firstName string
 					iFirstName, ok := m["firstName"]
@@ -255,9 +255,10 @@ var invitePatientsMutation = &graphql.Field{
 					}
 
 					// Create a parked entity for the account
-					email := m["email"].(string)
+					email, _ := m["email"].(string)
+					phoneNumber, _ := m["phoneNumber"].(string)
 					// Can only ignore this err because we checked it above
-					fpn, _ := phone.Format(m["phoneNumber"].(string), phone.E164)
+					fpn, _ := phone.Format(phoneNumber, phone.E164)
 					pat.PhoneNumber = fpn
 					pat.Email = email
 					patientEntity, err := ram.CreateEntity(ctx, &directory.CreateEntityRequest{
