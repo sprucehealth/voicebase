@@ -300,7 +300,7 @@ func createPostMessageRequest(ctx context.Context, threadID models.ThreadID, fro
 	}
 
 	// TODO: validate any attachments
-	attachments, err := transformAttachmentsFromRequest(postMessage.Attachments)
+	attachments, err := TransformAttachmentsFromRequest(postMessage.Attachments)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

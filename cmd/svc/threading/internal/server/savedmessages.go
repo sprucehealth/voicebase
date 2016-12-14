@@ -25,7 +25,7 @@ func (s *threadsServer) CreateSavedMessage(ctx context.Context, in *threading.Cr
 		return nil, err
 	}
 
-	attachments, err := transformAttachmentsFromRequest(msg.Attachments)
+	attachments, err := TransformAttachmentsFromRequest(msg.Attachments)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -148,7 +148,7 @@ func (s *threadsServer) UpdateSavedMessage(ctx context.Context, in *threading.Up
 		if err != nil {
 			return nil, err
 		}
-		attachments, err := transformAttachmentsFromRequest(msg.Attachments)
+		attachments, err := TransformAttachmentsFromRequest(msg.Attachments)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}

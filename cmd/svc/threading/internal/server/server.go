@@ -18,8 +18,10 @@ import (
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/textutil"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/events"
+	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/payments"
@@ -53,6 +55,8 @@ type threadsServer struct {
 	settingsClient     settings.SettingsClient
 	mediaClient        media.MediaClient
 	paymentsClient     payments.PaymentsClient
+	careClient         care.CareClient
+	layoutClient       layout.LayoutClient
 	publisher          events.Publisher
 	webDomain          string
 }
@@ -68,6 +72,8 @@ func NewThreadsServer(
 	settingsClient settings.SettingsClient,
 	mediaClient media.MediaClient,
 	paymentsClient payments.PaymentsClient,
+	careClient care.CareClient,
+	layoutClient layout.LayoutClient,
 	publisher events.Publisher,
 	webDomain string,
 ) threading.ThreadsServer {
@@ -84,6 +90,8 @@ func NewThreadsServer(
 		settingsClient:     settingsClient,
 		mediaClient:        mediaClient,
 		paymentsClient:     paymentsClient,
+		careClient:         careClient,
+		layoutClient:       layoutClient,
 		publisher:          publisher,
 		webDomain:          webDomain,
 	}
@@ -364,7 +372,7 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 				return errors.Trace(err)
 			}
 		}
-		req.Attachments, err = transformAttachmentsFromRequest(in.Message.Attachments)
+		req.Attachments, err = TransformAttachmentsFromRequest(in.Message.Attachments)
 		if err != nil {
 			return errors.Trace(err)
 		}
@@ -414,8 +422,10 @@ func (s *threadsServer) CreateThread(ctx context.Context, in *threading.CreateTh
 	if !in.DontNotify && updateResult != nil {
 		s.notifyMembersOfPublishMessage(ctx, thread.OrganizationID, models.EmptySavedQueryID(), thread, item, in.FromEntityID, updateResult.entityShouldBeNotified)
 	}
+
 	// Publish that we created a new thread
 	s.publisher.PublishAsync(&threading.NewThreadEvent{ThreadID: threadID.String()})
+
 	return &threading.CreateThreadResponse{
 		ThreadID:   threadID.String(),
 		ThreadItem: it,
@@ -1740,8 +1750,14 @@ func (s *threadsServer) UpdateSavedQuery(ctx context.Context, in *threading.Upda
 	}
 	rebuild := in.ForceRebuild
 	update := &dal.SavedQueryUpdate{}
-	if in.Title != "" {
-		update.Title = &in.Title
+	if in.ShortTitle != "" {
+		update.ShortTitle = &in.ShortTitle
+	}
+	if in.LongTitle != "" {
+		update.LongTitle = &in.LongTitle
+	}
+	if in.Description != "" {
+		update.Description = &in.Description
 	}
 	if in.Ordinal > 0 {
 		update.Ordinal = ptr.Int(int(in.Ordinal))
@@ -2052,16 +2068,17 @@ func (s *threadsServer) hydrateThreadForViewer(ctx context.Context, ts []*thread
 }
 
 func (s *threadsServer) publishMessage(ctx context.Context, orgID, primaryEntityID string, threadID models.ThreadID, item *threading.ThreadItem, uuid string) {
-	if s.sns == nil {
-		return
+	pit := &threading.PublishedThreadItem{
+		OrganizationID:  orgID,
+		ThreadID:        threadID.String(),
+		PrimaryEntityID: primaryEntityID,
+		Item:            item,
+		UUID:            uuid,
 	}
+	// TODO: Remove this once we correctly modify the SQS subscriptions for recievers
 	conc.Go(func() {
-		pit := &threading.PublishedThreadItem{
-			OrganizationID:  orgID,
-			ThreadID:        threadID.String(),
-			PrimaryEntityID: primaryEntityID,
-			Item:            item,
-			UUID:            uuid,
+		if s.sns == nil {
+			return
 		}
 		data, err := pit.Marshal()
 		if err != nil {
@@ -2076,6 +2093,10 @@ func (s *threadsServer) publishMessage(ctx context.Context, orgID, primaryEntity
 			golog.Errorf("Failed to publish SNS: %s", err)
 		}
 	})
+	// Move to the new publishing format
+	if s.publisher != nil {
+		s.publisher.PublishAsync(pit)
+	}
 }
 
 // teamThreadSystemTitle generates a system title for a thread and verifies that all members are part of the expected organization

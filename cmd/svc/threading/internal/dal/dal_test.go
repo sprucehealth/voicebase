@@ -1224,14 +1224,18 @@ func TestSavedQueries(t *testing.T) {
 
 	newQuery := &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD_REFERENCE}}}}
 	test.OK(t, dal.UpdateSavedQuery(ctx, sq1.ID, &SavedQueryUpdate{
-		Title:   ptr.String("new title"),
-		Ordinal: ptr.Int(19),
-		Query:   newQuery,
+		ShortTitle:  ptr.String("new short title"),
+		LongTitle:   ptr.String("new long title"),
+		Description: ptr.String("new description"),
+		Ordinal:     ptr.Int(19),
+		Query:       newQuery,
 	}))
 
 	sq, err = dal.SavedQuery(ctx, sq1.ID)
 	test.OK(t, err)
-	test.Equals(t, "new title", sq.ShortTitle)
+	test.Equals(t, "new short title", sq.ShortTitle)
+	test.Equals(t, "new long title", sq.LongTitle)
+	test.Equals(t, "new description", sq.Description)
 	test.Equals(t, 19, sq.Ordinal)
 	test.Equals(t, newQuery, sq.Query)
 

@@ -35,8 +35,8 @@ var invitePatientsInfoType = graphql.NewInputObject(graphql.InputObjectConfig{
 	Fields: graphql.InputObjectConfigFieldMap{
 		"firstName":   &graphql.InputObjectFieldConfig{Type: graphql.String},
 		"lastName":    &graphql.InputObjectFieldConfig{Type: graphql.String},
-		"email":       &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
-		"phoneNumber": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+		"email":       &graphql.InputObjectFieldConfig{Type: graphql.String},
+		"phoneNumber": &graphql.InputObjectFieldConfig{Type: graphql.String},
 	},
 })
 

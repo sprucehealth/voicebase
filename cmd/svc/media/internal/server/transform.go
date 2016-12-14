@@ -59,6 +59,8 @@ func transformMediaOwnerTypeToResponse(ot dal.MediaOwnerType) (media.MediaOwnerT
 		return media.MediaOwnerType_VISIT, nil
 	case dal.MediaOwnerTypeSavedMessage:
 		return media.MediaOwnerType_SAVED_MESSAGE, nil
+	case dal.MediaOwnerTypeTriggeredMessage:
+		return media.MediaOwnerType_TRIGGERED_MESSAGE, nil
 	case dal.MediaOwnerTypeLegacy:
 		return media.MediaOwnerType_LEGACY, nil
 	}

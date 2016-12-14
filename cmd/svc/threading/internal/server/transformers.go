@@ -150,7 +150,7 @@ func transformThreadToResponse(thread *models.Thread, forExternal bool) (*thread
 		Tags:                 transformTagsToResponse(thread.Tags),
 	}
 	var err error
-	t.Type, err = transformThreadTypeToResponse(thread.Type)
+	t.Type, err = TransformThreadTypeToResponse(thread.Type)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -179,7 +179,8 @@ func transformThreadToResponse(thread *models.Thread, forExternal bool) (*thread
 	return t, nil
 }
 
-func transformThreadTypeToResponse(tt models.ThreadType) (threading.ThreadType, error) {
+// TransformThreadTypeToResponse transforms the thread type model to the repsonse
+func TransformThreadTypeToResponse(tt models.ThreadType) (threading.ThreadType, error) {
 	switch tt {
 	case models.ThreadTypeUnknown:
 		return threading.THREAD_TYPE_INVALID, nil
@@ -520,7 +521,8 @@ func transformSavedQueryToResponse(sq *models.SavedQuery) (*threading.SavedQuery
 
 // From request
 
-func transformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.Attachment, error) {
+// TransformAttachmentsFromRequest transforms the api representation of an attachment to the dal version
+func TransformAttachmentsFromRequest(atts []*threading.Attachment) ([]*models.Attachment, error) {
 	if len(atts) == 0 {
 		return nil, nil
 	}

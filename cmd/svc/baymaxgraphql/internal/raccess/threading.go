@@ -84,3 +84,8 @@ func (m *resourceAccessor) ScheduledMessages(ctx context.Context, req *threading
 
 	return res, nil
 }
+
+func (m *resourceAccessor) CloneAttachments(ctx context.Context, req *threading.CloneAttachmentsRequest) (*threading.CloneAttachmentsResponse, error) {
+	resp, err := m.threading.CloneAttachments(ctx, req)
+	return resp, errors.Trace(err)
+}

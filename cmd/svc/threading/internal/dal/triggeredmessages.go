@@ -66,13 +66,13 @@ func (d *dal) TriggeredMessage(ctx context.Context, id models.TriggeredMessageID
 }
 
 // TriggeredMessage retrieves a triggered_messages record
-func (d *dal) TriggeredMessageForKeys(ctx context.Context, triggerKey string, triggerSubkey string, opts ...QueryOption) (*models.TriggeredMessage, error) {
-	q := selectTriggeredMessage + ` WHERE trigger_key = ? AND trigger_subkey = ?`
+func (d *dal) TriggeredMessageForKeys(ctx context.Context, organizationEntityID, triggerKey, triggerSubkey string, opts ...QueryOption) (*models.TriggeredMessage, error) {
+	q := selectTriggeredMessage + ` WHERE organization_entity_id = ? AND trigger_subkey = ? AND trigger_key = ?`
 	if queryOptions(opts).Has(ForUpdate) {
 		q += ` FOR UPDATE`
 	}
-	row := d.db.QueryRow(q, triggerKey, triggerSubkey)
-	model, err := scanTriggeredMessage(ctx, row, "trigger_key = %v, trigger_subkey = %v", triggerKey, triggerSubkey)
+	row := d.db.QueryRow(q, organizationEntityID, triggerSubkey, triggerKey)
+	model, err := scanTriggeredMessage(ctx, row, "organization_entity_id = %v, trigger_key = %v, trigger_subkey = %v", organizationEntityID, triggerSubkey, triggerKey)
 	return model, errors.Trace(err)
 }
 

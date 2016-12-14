@@ -84,7 +84,7 @@ func TestCreateTriggeredMessage(t *testing.T) {
 	t.Run("Success-NoExistingTriggeredMessage", func(t *testing.T) {
 		st := newServerTest(t)
 		st.dal.Expect(
-			mock.NewExpectation(st.dal.TriggeredMessageForKeys, "NEW_PATIENT", "subkey", []interface{}{}).WithReturns(
+			mock.NewExpectation(st.dal.TriggeredMessageForKeys, "OrganizationEntityID", "NEW_PATIENT", "subkey", []interface{}{}).WithReturns(
 				(*models.TriggeredMessage)(nil), dal.ErrNotFound))
 		st.dal.Expect(
 			mock.NewExpectation(st.dal.CreateTriggeredMessage, &models.TriggeredMessage{
@@ -146,7 +146,7 @@ func TestCreateTriggeredMessage(t *testing.T) {
 	t.Run("Success-ExistingTriggeredMessage", func(t *testing.T) {
 		st := newServerTest(t)
 		st.dal.Expect(
-			mock.NewExpectation(st.dal.TriggeredMessageForKeys, "NEW_PATIENT", "subkey", []interface{}{}).WithReturns(
+			mock.NewExpectation(st.dal.TriggeredMessageForKeys, "OrganizationEntityID", "NEW_PATIENT", "subkey", []interface{}{}).WithReturns(
 				tmModel, nil))
 		st.dal.Expect(mock.NewExpectation(st.dal.DeleteTriggeredMessageItemsForTriggeredMessage, tmID))
 		st.dal.Expect(mock.NewExpectation(st.dal.DeleteTriggeredMessage, tmID))
@@ -254,9 +254,10 @@ func TestTriggeredMessages(t *testing.T) {
 	t.Run("Error-KeyLookup-NotFound", func(t *testing.T) {
 		st := newServerTest(t)
 		st.dal.Expect(
-			mock.NewExpectation(st.dal.TriggeredMessageForKeys, "NEW_PATIENT", "subkey", []interface{}{}).WithReturns(
+			mock.NewExpectation(st.dal.TriggeredMessageForKeys, "OrganizationEntityID", "NEW_PATIENT", "subkey", []interface{}{}).WithReturns(
 				(*models.TriggeredMessage)(nil), dal.ErrNotFound))
 		testTriggeredMessages(t, st, &threading.TriggeredMessagesRequest{
+			OrganizationEntityID: "OrganizationEntityID",
 			LookupKey: &threading.TriggeredMessagesRequest_Key{
 				Key: &threading.TriggeredMessageKey{
 					Key:    threading.TRIGGERED_MESSAGE_KEY_NEW_PATIENT,
@@ -268,13 +269,14 @@ func TestTriggeredMessages(t *testing.T) {
 	t.Run("Success-KeyLookup", func(t *testing.T) {
 		st := newServerTest(t)
 		st.dal.Expect(
-			mock.NewExpectation(st.dal.TriggeredMessageForKeys, "NEW_PATIENT", "subkey", []interface{}{}).WithReturns(
+			mock.NewExpectation(st.dal.TriggeredMessageForKeys, "OrganizationEntityID", "NEW_PATIENT", "subkey", []interface{}{}).WithReturns(
 				tmModel, nil))
 		st.dal.Expect(mock.NewExpectation(st.dal.TriggeredMessageItemsForTriggeredMessage, tmID, []interface{}{}).WithReturns(
 			[]*models.TriggeredMessageItem{tmiModel1, tmiModel2}, nil))
 		rtm, err := transformTriggeredMessageToResponse(tmModel, []*models.TriggeredMessageItem{tmiModel1, tmiModel2})
 		test.OK(t, err)
 		testTriggeredMessages(t, st, &threading.TriggeredMessagesRequest{
+			OrganizationEntityID: "OrganizationEntityID",
 			LookupKey: &threading.TriggeredMessagesRequest_Key{
 				Key: &threading.TriggeredMessageKey{
 					Key:    threading.TRIGGERED_MESSAGE_KEY_NEW_PATIENT,

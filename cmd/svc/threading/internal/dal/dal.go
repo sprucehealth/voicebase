@@ -140,7 +140,9 @@ type SavedQueryThread struct {
 
 type SavedQueryUpdate struct {
 	Query                *models.Query
-	Title                *string
+	ShortTitle           *string
+	LongTitle            *string
+	Description          *string
 	Ordinal              *int
 	NotificationsEnabled *bool
 }
@@ -231,7 +233,7 @@ type DAL interface {
 	CreateTriggeredMessage(ctx context.Context, model *models.TriggeredMessage) (models.TriggeredMessageID, error)
 	CreateTriggeredMessages(ctx context.Context, models []*models.TriggeredMessage) error
 	TriggeredMessage(ctx context.Context, id models.TriggeredMessageID, opts ...QueryOption) (*models.TriggeredMessage, error)
-	TriggeredMessageForKeys(ctx context.Context, triggerKey string, triggerSubkey string, opts ...QueryOption) (*models.TriggeredMessage, error)
+	TriggeredMessageForKeys(ctx context.Context, organizationEntityID, triggerKey, triggerSubkey string, opts ...QueryOption) (*models.TriggeredMessage, error)
 	DeleteTriggeredMessage(ctx context.Context, id models.TriggeredMessageID) (int64, error)
 	UpdateTriggeredMessage(ctx context.Context, id models.TriggeredMessageID, update *models.TriggeredMessageUpdate) (int64, error)
 
@@ -1291,8 +1293,14 @@ func (d *dal) UpdateSavedQuery(ctx context.Context, id models.SavedQueryID, upda
 		}
 		args.Append("query", queryBlob)
 	}
-	if update.Title != nil {
-		args.Append("title", *update.Title)
+	if update.ShortTitle != nil {
+		args.Append("title", *update.ShortTitle)
+	}
+	if update.LongTitle != nil {
+		args.Append("long_title", *update.LongTitle)
+	}
+	if update.Description != nil {
+		args.Append("description", *update.Description)
 	}
 	if update.Ordinal != nil {
 		args.Append("ordinal", *update.Ordinal)

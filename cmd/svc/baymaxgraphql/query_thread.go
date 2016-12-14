@@ -153,10 +153,15 @@ var threadType = graphql.NewObject(
 			},
 			"allowPatientInitiatedVisits": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.Boolean),
-				Resolve: apiaccess.Patient(func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: apiaccess.Authenticated(func(p graphql.ResolveParams) (interface{}, error) {
 					svc := serviceFromParams(p)
 					ctx := p.Context
 					th := p.Source.(*models.Thread)
+					acc := gqlctx.Account(ctx)
+
+					if acc.Type == auth.AccountType_PROVIDER {
+						return false, nil
+					}
 
 					booleanValue, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
 						NodeID: th.OrganizationID,

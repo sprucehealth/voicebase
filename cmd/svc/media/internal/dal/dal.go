@@ -136,13 +136,16 @@ const (
 	MediaOwnerTypeVisit MediaOwnerType = "VISIT"
 	// MediaOwnerTypeSavedMessage represents the SAVED_MESSAGE state of the owner_type field on a media record
 	MediaOwnerTypeSavedMessage MediaOwnerType = "SAVED_MESSAGE"
+	// MediaOwnerTypeTriggeredMessage represents the TRIGGERED_MESSAGE state of the owner_type field on a media record
+	MediaOwnerTypeTriggeredMessage MediaOwnerType = "TRIGGERED_MESSAGE"
 )
 
 // ParseMediaOwnerType converts a string into the correcponding enum value
 func ParseMediaOwnerType(s string) (MediaOwnerType, error) {
 	switch t := MediaOwnerType(strings.ToUpper(s)); t {
 	case MediaOwnerTypeOrganization, MediaOwnerTypeThread, MediaOwnerTypeEntity,
-		MediaOwnerTypeAccount, MediaOwnerTypeVisit, MediaOwnerTypeSavedMessage, MediaOwnerTypeLegacy:
+		MediaOwnerTypeAccount, MediaOwnerTypeVisit, MediaOwnerTypeSavedMessage,
+		MediaOwnerTypeTriggeredMessage, MediaOwnerTypeLegacy:
 		return t, nil
 	}
 	return MediaOwnerType(""), errors.Errorf("Unknown owner_type:%s", s)

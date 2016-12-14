@@ -79,13 +79,14 @@ func init() {
 					Resolve:           entityPracticeLinkResolve,
 					DeprecationReason: "DEPRECATED due to practice links becoming plural per org. Use `practiceLinks`",
 				},
-				"practiceLinks":  &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(practiceLinkType)), Resolve: entityPracticeLinksResolve},
-				"type":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"status":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"externalIDs":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
-				"settings":       &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(settingType)), Resolve: entitySettingsResolve},
-				"vendorAccounts": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(vendorAccountType)), Resolve: entityVendorAccountsResolve},
-				"savedMessages":  &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(savedMessageType)), Resolve: entitySavedMessagesResolve},
+				"practiceLinks":      &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(practiceLinkType)), Resolve: entityPracticeLinksResolve},
+				"type":               &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"status":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"externalIDs":        &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
+				"settings":           &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(settingType)), Resolve: entitySettingsResolve},
+				"vendorAccounts":     &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(vendorAccountType)), Resolve: entityVendorAccountsResolve},
+				"savedMessages":      &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(savedMessageType)), Resolve: entitySavedMessagesResolve},
+				"savedThreadQueries": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(savedThreadQueryType)), Resolve: entitySavedThreadQueriesResolve},
 			},
 		},
 	)
@@ -120,6 +121,12 @@ func entitySavedMessagesResolve(p graphql.ResolveParams) (interface{}, error) {
 	entity := p.Source.(*models.Entity)
 	golog.ContextLogger(ctx).Debugf("Looking up saved messages for %s", entity.ID)
 	return getSavedMessagesForEntity(ctx, client.Threading(p), entity.ID)
+}
+
+func entitySavedThreadQueriesResolve(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	entity := p.Source.(*models.Entity)
+	return getSavedThreadQueriesForEntity(ctx, client.Directory(p), client.Threading(p), entity.ID)
 }
 
 func getEntity(ctx context.Context, dirCli directory.DirectoryClient, id string) (*models.Entity, error) {

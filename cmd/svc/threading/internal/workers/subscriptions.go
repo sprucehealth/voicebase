@@ -21,7 +21,7 @@ type Subscriber struct {
 
 // SubscriptionsThreadClient represents a client that is consumed by the subscriptions workers
 type SubscriptionsThreadClient interface {
-	newPatientWelcomeMessageThreadClient
+	triggeredMessageThreadClient
 }
 
 // InitSubscriptions bootstraps the PubSub subscriptions for the service
@@ -44,6 +44,9 @@ func InitSubscriptions(
 		threadClient:    threadClient,
 	}
 	if err := s.Subscribe("newpatient-welcome-message", []events.Unmarshaler{&threading.NewThreadEvent{}}, s.newPatientWelcomeMessage); err != nil {
+		return nil, errors.Trace(err)
+	}
+	if err := s.Subscribe("away-message", []events.Unmarshaler{&threading.PublishedThreadItem{}}, s.awayMessage); err != nil {
 		return nil, errors.Trace(err)
 	}
 	return s, nil

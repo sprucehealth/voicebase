@@ -429,10 +429,12 @@ enum NotificationsEnabledUpdate {
 message UpdateSavedQueryRequest {
 	string saved_query_id = 1 [(gogoproto.customname) = "SavedQueryID"];
 	Query query = 2;
-	string title = 3;
+	string short_title = 3;
 	int32 ordinal = 4;
 	bool force_rebuild = 5; // If true then force rebuilding the saved query index even if the query doesn't change
 	NotificationsEnabledUpdate notifications_enabled = 6;
+	string long_title = 7;
+	string description = 8;
 }
 
 message UpdateSavedQueryResponse {
@@ -822,6 +824,7 @@ message CreateTriggeredMessageResponse {
 }
 
 message TriggeredMessagesRequest {
+	string organization_entity_id = 1 [(gogoproto.customname) = "OrganizationEntityID"];
 	oneof lookup_key {
 		TriggeredMessageKey key = 2;
 	}
@@ -847,7 +850,27 @@ message UpdateTriggeredMessageResponse {
 	TriggeredMessage triggered_message = 1;
 }
 
+message CloneAttachmentsRequest {
+	enum OwnerType {
+		CLONED_ATTACHMENT_OWNER_INVALID = 0;
+		CLONED_ATTACHMENT_OWNER_ACCOUNT = 1;
+		CLONED_ATTACHMENT_OWNER_TRIGGERED_MESSAGE = 2;
+		CLONED_ATTACHMENT_OWNER_SAVED_MESSAGE = 3;
+		CLONED_ATTACHMENT_OWNER_THREAD = 4;
+		CLONED_ATTACHMENT_OWNER_VISIT = 5;
+	}
+	repeated Attachment attachments = 1;
+	OwnerType owner_type = 2;
+	string owner_id = 3 [(gogoproto.customname) = "OwnerID"];
+}
+
+message CloneAttachmentsResponse {
+	repeated Attachment attachments = 1;
+}
+
 service Threads {
+	// CloneAttachments creates a clone of a list of attachments
+	rpc CloneAttachments(CloneAttachmentsRequest) returns (CloneAttachmentsResponse);
 	// CreateEmptyThread creates a new thread with no messages
 	rpc CreateEmptyThread(CreateEmptyThreadRequest) returns (CreateEmptyThreadResponse);
 	// CreateSavedQuery saves a query for later use
