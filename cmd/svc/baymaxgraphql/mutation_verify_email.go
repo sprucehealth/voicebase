@@ -69,7 +69,8 @@ var verifyEmailForAccountCreationInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "VerifyEmailForAccountCreationInput",
 		Fields: graphql.InputObjectConfigFieldMap{
-			"clientMutationId": newClientMutationIDInputField(),
+			"clientMutationId":      newClientMutationIDInputField(),
+			"accountInviteClientID": accountInviteClientInputType,
 		},
 	},
 )
