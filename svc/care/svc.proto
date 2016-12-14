@@ -302,8 +302,9 @@ message SearchAllergyMedicationsResponse {
 
 message GetVisitsRequest {
 	bool patient_initiated = 1;
-	bool draft = 2;
+	bool submitted = 2;
 	string organization_id = 3 [(gogoproto.customname) = "OrganizationID"];
+	bool triaged = 4;
 
 	oneof query {
 		string creator_id = 10 [(gogoproto.customname) = "CreatorID"];

@@ -29,7 +29,8 @@ type VisitQuery struct {
 	CreatorID        *string
 	ID               *string
 	OrganizationID   *string
-	Draft            *bool
+	Submitted        *bool
+	Triaged          *bool
 	PatientInitiated *bool
 }
 
@@ -155,9 +156,14 @@ func (d *dal) Visits(ctx context.Context, query *VisitQuery) ([]*models.Visit, e
 
 	var whereClauses []string
 	var vals []interface{}
-	if query.Draft != nil && *query.Draft {
+	if query.Submitted != nil {
 		whereClauses = append(whereClauses, " submitted = ?")
-		vals = append(vals, !*query.Draft)
+		vals = append(vals, *query.Submitted)
+	}
+
+	if query.Triaged != nil {
+		whereClauses = append(whereClauses, " triaged = ?")
+		vals = append(vals, *query.Triaged)
 	}
 
 	if query.CreatorID != nil {

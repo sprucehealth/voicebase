@@ -125,7 +125,8 @@ var patientInitiatedVisitDraftsQuery = &graphql.Field{
 		}
 
 		res, err := ram.Visits(ctx, &care.GetVisitsRequest{
-			Draft:            true,
+			Submitted:        false,
+			Triaged:          false,
 			PatientInitiated: true,
 			OrganizationID:   organizationID,
 			Query: &care.GetVisitsRequest_CreatorID{

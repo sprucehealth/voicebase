@@ -132,7 +132,8 @@ func TestPatientInitiatedVisitDrafts(t *testing.T) {
 		}, nil))
 
 	g.ra.Expect(mock.NewExpectation(g.ra.Visits, &care.GetVisitsRequest{
-		Draft:            true,
+		Submitted:        false,
+		Triaged:          false,
 		PatientInitiated: true,
 		OrganizationID:   orgID,
 		Query: &care.GetVisitsRequest_CreatorID{

@@ -402,7 +402,8 @@ func TestGetVisits_PatientInitiated(t *testing.T) {
 
 	dalMock.Expect(mock.NewExpectation(dalMock.Visits, &dal.VisitQuery{
 		CreatorID:        ptr.String("creator_id"),
-		Draft:            ptr.Bool(true),
+		Submitted:        ptr.Bool(false),
+		Triaged:          ptr.Bool(false),
 		PatientInitiated: ptr.Bool(true),
 		OrganizationID:   ptr.String("org_id"),
 	}).WithReturns(([]*models.Visit)(nil), nil))
@@ -411,7 +412,8 @@ func TestGetVisits_PatientInitiated(t *testing.T) {
 
 	_, err := srv.GetVisits(context.Background(), &care.GetVisitsRequest{
 		PatientInitiated: true,
-		Draft:            true,
+		Submitted:        false,
+		Triaged:          false,
 		OrganizationID:   "org_id",
 		Query: &care.GetVisitsRequest_CreatorID{
 			CreatorID: "creator_id",

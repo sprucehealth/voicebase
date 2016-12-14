@@ -141,7 +141,8 @@ func (s *server) GetVisits(ctx context.Context, in *care.GetVisitsRequest) (*car
 		return nil, errors.Errorf("Unknown type for querying visits %T", in.Query)
 	}
 
-	visitQuery.Draft = &in.Draft
+	visitQuery.Triaged = &in.Triaged
+	visitQuery.Submitted = &in.Submitted
 	visitQuery.PatientInitiated = &in.PatientInitiated
 	visitQuery.OrganizationID = &in.OrganizationID
 
