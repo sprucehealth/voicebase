@@ -530,8 +530,8 @@ func (dl *DAL) TriggeredMessage(ctx context.Context, id models.TriggeredMessageI
 	return rets[0].(*models.TriggeredMessage), mock.SafeError(rets[1])
 }
 
-func (dl *DAL) TriggeredMessageForKeys(ctx context.Context, triggerKey string, triggerSubkey string, opts ...dal.QueryOption) (*models.TriggeredMessage, error) {
-	rets := dl.Expector.Record(triggerKey, triggerSubkey, optsToInterfaces(opts))
+func (dl *DAL) TriggeredMessageForKeys(ctx context.Context, organizationEntityID, triggerKey, triggerSubkey string, opts ...dal.QueryOption) (*models.TriggeredMessage, error) {
+	rets := dl.Expector.Record(organizationEntityID, triggerKey, triggerSubkey, optsToInterfaces(opts))
 	if len(rets) == 0 {
 		return nil, nil
 	}

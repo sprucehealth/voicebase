@@ -94,6 +94,7 @@ type ResourceAccessor interface {
 	CheckPasswordResetToken(ctx context.Context, token string) (*auth.CheckPasswordResetTokenResponse, error)
 	CheckVerificationCode(ctx context.Context, token, code string) (*auth.CheckVerificationCodeResponse, error)
 	ClaimMedia(ctx context.Context, req *media.ClaimMediaRequest) error
+	CloneAttachments(ctx context.Context, req *threading.CloneAttachmentsRequest) (*threading.CloneAttachmentsResponse, error)
 	CloneMedia(ctx context.Context, req *media.CloneMediaRequest) (*media.CloneMediaResponse, error)
 	ConnectVendorAccount(ctx context.Context, req *payments.ConnectVendorAccountRequest) (*payments.ConnectVendorAccountResponse, error)
 	ConfigurePatientSync(ctx context.Context, req *patientsync.ConfigureSyncRequest) (*patientsync.ConfigureSyncResponse, error)

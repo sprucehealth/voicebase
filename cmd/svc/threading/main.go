@@ -19,8 +19,10 @@ import (
 	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/dbutil"
 	"github.com/sprucehealth/backend/libs/golog"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/events"
+	"github.com/sprucehealth/backend/svc/layout"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/notification"
 	"github.com/sprucehealth/backend/svc/payments"
@@ -45,10 +47,12 @@ var (
 	flagKMSKeyARN          = flag.String("kms_key_arn", "", "the arn of the master key that should be used to encrypt outbound and decrypt inbound data")
 
 	// Services
-	flagSettingsAddr  = flag.String("settings_addr", "_settings._tcp.service", "host:port of settings service")
-	flagMediaAddr     = flag.String("media_addr", "_media._tcp.service", "host:port of media service")
+	flagCareAddr      = flag.String("care_addr", "_care._tcp.service", "host:port of care service")
 	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "host:port of directory service")
+	flagLayoutAddr    = flag.String("layout_addr", "_care._tcp.service", "host:port of layout service")
+	flagMediaAddr     = flag.String("media_addr", "_media._tcp.service", "host:port of media service")
 	flagPaymentsAddr  = flag.String("payments_addr", "_payments._tcp.service", "host:port of payments service")
+	flagSettingsAddr  = flag.String("settings_addr", "_settings._tcp.service", "host:port of settings service")
 )
 
 func init() {
@@ -129,13 +133,24 @@ func main() {
 	}
 	paymentsClient := payments.NewPaymentsClient(conn)
 
+	conn, err = bootSvc.DialGRPC(*flagCareAddr)
+	if err != nil {
+		golog.Fatalf("Unable to connect to care service: %s", err)
+	}
+	careClient := care.NewCareClient(conn)
+
+	conn, err = bootSvc.DialGRPC(*flagLayoutAddr)
+	if err != nil {
+		golog.Fatalf("Unable to connect to layout service: %s", err)
+	}
+	layoutClient := layout.NewLayoutClient(conn)
+
 	publisher, err := events.NewSNSPublisher(eSNS, awsSession)
 	if err != nil {
 		golog.Fatalf("Failed to initialize publisher: %s", err)
 	}
 
 	dl := dal.New(db, clock.New())
-
 	// register the settings with the service
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	_, err = settings.RegisterConfigs(
@@ -161,6 +176,8 @@ func main() {
 		settingsClient,
 		mediaClient,
 		paymentsClient,
+		careClient,
+		layoutClient,
 		publisher,
 		*flagWebDomain)
 	threading.InitMetrics(srv, bootSvc.MetricsRegistry.Scope("server"))
@@ -213,4 +230,8 @@ type subscriberClient struct {
 
 func (sc subscriberClient) PostMessages(ctx context.Context, req *threading.PostMessagesRequest, opts ...grpc.CallOption) (*threading.PostMessagesResponse, error) {
 	return sc.srv.PostMessages(ctx, req)
+}
+
+func (sc subscriberClient) CloneAttachments(ctx context.Context, req *threading.CloneAttachmentsRequest, opts ...grpc.CallOption) (*threading.CloneAttachmentsResponse, error) {
+	return sc.srv.CloneAttachments(ctx, req)
 }

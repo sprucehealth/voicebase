@@ -62,3 +62,11 @@ func (m *ResourceAccessor) ScheduledMessages(ctx context.Context, req *threading
 	}
 	return rets[0].(*threading.ScheduledMessagesResponse), mock.SafeError(rets[1])
 }
+
+func (m *ResourceAccessor) CloneAttachments(ctx context.Context, req *threading.CloneAttachmentsRequest) (*threading.CloneAttachmentsResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.CloneAttachmentsResponse), mock.SafeError(rets[1])
+}

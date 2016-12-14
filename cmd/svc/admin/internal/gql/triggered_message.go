@@ -34,13 +34,15 @@ var triggeredMessageType = graphql.NewObject(
 	})
 
 type triggeredMessageInput struct {
-	Key    string `gql:"key,nonempty"`
-	Subkey string `gql:"subkey,nonempty"`
+	EntityID string `gql:"entityID,nonempty"`
+	Key      string `gql:"key,nonempty"`
+	Subkey   string `gql:"subkey,nonempty"`
 }
 
 var triggeredMessageInputType = graphql.FieldConfigArgument{
-	"key":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-	"subkey": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+	"entityID": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+	"key":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+	"subkey":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 }
 
 // triggeredMessageField represents a graphql field for Querying a triggered message object
@@ -68,7 +70,7 @@ func triggeredMessageResolve(p graphql.ResolveParams) (interface{}, error) {
 	}
 	tkey := threading.TriggeredMessageKey_Key(key)
 
-	return getTriggeredMessage(ctx, client.Threading(p), tkey, in.Subkey)
+	return getTriggeredMessage(ctx, client.Threading(p), in.EntityID, tkey, in.Subkey)
 }
 
 func triggeredMessageOrganizationResolve(p graphql.ResolveParams) (interface{}, error) {
@@ -83,8 +85,9 @@ func triggeredMessageActorResolve(p graphql.ResolveParams) (interface{}, error) 
 	return getEntity(ctx, client.Directory(p), tm.ActorEntityID)
 }
 
-func getTriggeredMessage(ctx context.Context, threadingCli threading.ThreadsClient, key threading.TriggeredMessageKey_Key, subkey string) (*models.TriggeredMessage, error) {
+func getTriggeredMessage(ctx context.Context, threadingCli threading.ThreadsClient, entityID string, key threading.TriggeredMessageKey_Key, subkey string) (*models.TriggeredMessage, error) {
 	resp, err := threadingCli.TriggeredMessages(ctx, &threading.TriggeredMessagesRequest{
+		OrganizationEntityID: entityID,
 		LookupKey: &threading.TriggeredMessagesRequest_Key{
 			Key: &threading.TriggeredMessageKey{
 				Key:    key,

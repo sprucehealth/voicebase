@@ -14,11 +14,8 @@ import (
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
-	"github.com/sprucehealth/backend/svc/care"
+	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
-	"github.com/sprucehealth/backend/svc/layout"
-	"github.com/sprucehealth/backend/svc/media"
-	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
@@ -40,7 +37,7 @@ var cloneMessageInputType = graphql.NewInputObject(
 			"clientMutationId": newClientMutationIDInputField(),
 			"sourceMessageID": &graphql.InputObjectFieldConfig{
 				Type:        graphql.NewNonNull(graphql.ID),
-				Description: "ID of either a tream item or saved message",
+				Description: "ID of either a thread item or saved message",
 			},
 			"organizationID": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"forThreadID": &graphql.InputObjectFieldConfig{
@@ -190,7 +187,7 @@ var cloneMessageMutation = &graphql.Field{
 			Summary:  msg.Summary,
 			Title:    msg.Title,
 		}
-		clonedAttachments, unsupportedAttachments, err := cloneAttachments(ctx, ram, ent, in.OrganizationID, msg.Attachments, thread)
+		clonedAttachments, unsupportedAttachments, err := cloneAttachments(ctx, ram, gqlctx.Account(ctx), msg.Attachments, thread)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
@@ -229,109 +226,22 @@ var cloneMessageMutation = &graphql.Field{
 	}),
 }
 
-func cloneAttachments(ctx context.Context, ram raccess.ResourceAccessor, ent *directory.Entity, orgID string, attachments []*threading.Attachment, forThread *threading.Thread) (cloned []*threading.Attachment, unsupported []*threading.Attachment, err error) {
-	if ent.AccountID == "" {
-		return nil, nil, errors.Errorf("entity %s missing account ID", ent.ID)
-	}
-	acc := gqlctx.Account(ctx)
-	newAtts := make([]*threading.Attachment, 0, len(attachments))
+func cloneAttachments(ctx context.Context, ram raccess.ResourceAccessor, acc *auth.Account, attachments []*threading.Attachment, forThread *threading.Thread) (cloned []*threading.Attachment, unsupported []*threading.Attachment, err error) {
 	var unsupportedAttachments []*threading.Attachment
+	var supportedAttachments []*threading.Attachment
 	par := conc.NewParallel()
 	for _, att := range attachments {
-		atype, err := attachmentTypeAsEnum(att)
-		if err != nil {
-			return nil, nil, errors.Trace(err)
-		}
-		if forThread != nil && !allowAttachment(forThread, atype) {
-			unsupportedAttachments = append(unsupportedAttachments, att)
-			continue
-		}
-		newAtt := &threading.Attachment{}
-		*newAtt = *att
-		newAtts = append(newAtts, newAtt)
+		// Capture
+		cAtt := att
 		par.Go(func() error {
-			switch a := newAtt.Data.(type) {
-			case *threading.Attachment_Image:
-				res, err := ram.CloneMedia(ctx, &media.CloneMediaRequest{OwnerType: media.MediaOwnerType_ACCOUNT, OwnerID: ent.AccountID, MediaID: a.Image.MediaID})
-				if err != nil {
-					return errors.Trace(err)
-				}
-				newAtt.ContentID = res.MediaInfo.ID
-				newAtt.URL = res.MediaInfo.ID
-				a.Image.MediaID = res.MediaInfo.ID
-			case *threading.Attachment_Video:
-				res, err := ram.CloneMedia(ctx, &media.CloneMediaRequest{OwnerType: media.MediaOwnerType_ACCOUNT, OwnerID: ent.AccountID, MediaID: a.Video.MediaID})
-				if err != nil {
-					return errors.Trace(err)
-				}
-				newAtt.ContentID = res.MediaInfo.ID
-				newAtt.URL = res.MediaInfo.ID
-				a.Video.MediaID = res.MediaInfo.ID
-			case *threading.Attachment_Audio:
-				res, err := ram.CloneMedia(ctx, &media.CloneMediaRequest{OwnerType: media.MediaOwnerType_ACCOUNT, OwnerID: ent.AccountID, MediaID: a.Audio.MediaID})
-				if err != nil {
-					return errors.Trace(err)
-				}
-				newAtt.ContentID = res.MediaInfo.ID
-				newAtt.URL = res.MediaInfo.ID
-				a.Audio.MediaID = res.MediaInfo.ID
-			case *threading.Attachment_Document:
-				res, err := ram.CloneMedia(ctx, &media.CloneMediaRequest{OwnerType: media.MediaOwnerType_ACCOUNT, OwnerID: ent.AccountID, MediaID: a.Document.MediaID})
-				if err != nil {
-					return errors.Trace(err)
-				}
-				newAtt.ContentID = res.MediaInfo.ID
-				newAtt.URL = res.MediaInfo.ID
-				newAtt.Title = res.MediaInfo.Name
-				a.Document.MediaID = res.MediaInfo.ID
-				a.Document.Name = res.MediaInfo.Name
-			case *threading.Attachment_Visit:
-				res, err := ram.Visit(ctx, &care.GetVisitRequest{ID: a.Visit.VisitID})
-				if err != nil {
-					return errors.Trace(err)
-				}
-				vres, err := ram.VisitLayoutByVersion(ctx, &layout.GetVisitLayoutByVersionRequest{
-					VisitLayoutVersionID: res.Visit.LayoutVersionID,
-				})
-				if err != nil {
-					return errors.Trace(err)
-				}
-				newAtt.ContentID = vres.VisitLayout.ID
-			case *threading.Attachment_PaymentRequest:
-				pres, err := ram.Payment(ctx, &payments.PaymentRequest{
-					PaymentID: a.PaymentRequest.PaymentID,
-				})
-				if err != nil {
-					return errors.Trace(err)
-				}
-				p := pres.Payment
-				res, err := ram.CreatePayment(ctx, &payments.CreatePaymentRequest{
-					RequestingEntityID: p.RequestingEntityID,
-					Amount:             p.Amount,
-					Currency:           p.Currency,
-				})
-				if err != nil {
-					return errors.Trace(err)
-				}
-				newAtt.ContentID = res.Payment.ID
-			case *threading.Attachment_CarePlan:
-				cp, err := ram.CarePlan(ctx, a.CarePlan.CarePlanID)
-				if err != nil {
-					return errors.Trace(err)
-				}
-				res, err := ram.CreateCarePlan(ctx, &care.CreateCarePlanRequest{
-					Name:         cp.Name,
-					CreatorID:    acc.ID,
-					Instructions: cp.Instructions,
-					Treatments:   cp.Treatments,
-				})
-				if err != nil {
-					return errors.Trace(err)
-				}
-				newAtt.ContentID = res.CarePlan.ID
-				a.CarePlan.CarePlanID = res.CarePlan.ID
-			default:
-				return errors.Errorf("unknown attachment type %T", newAtt.Data)
+			atype, err := attachmentTypeAsEnum(cAtt)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			if forThread != nil && !allowAttachment(forThread, atype) {
+				unsupportedAttachments = append(unsupportedAttachments, cAtt)
+			} else {
+				supportedAttachments = append(supportedAttachments, cAtt)
 			}
 			return nil
 		})
@@ -339,5 +249,13 @@ func cloneAttachments(ctx context.Context, ram raccess.ResourceAccessor, ent *di
 	if err := par.Wait(); err != nil {
 		return nil, nil, errors.Trace(err)
 	}
-	return newAtts, unsupportedAttachments, nil
+	resp, err := ram.CloneAttachments(ctx, &threading.CloneAttachmentsRequest{
+		Attachments: supportedAttachments,
+		OwnerType:   threading.CLONED_ATTACHMENT_OWNER_ACCOUNT,
+		OwnerID:     acc.ID,
+	})
+	if err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+	return resp.Attachments, unsupportedAttachments, nil
 }

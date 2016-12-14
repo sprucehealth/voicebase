@@ -36,7 +36,7 @@ func (s *threadsServer) CreateTriggeredMessage(ctx context.Context, in *threadin
 		}
 
 		// Delete existing triggered messages for this set
-		tm, err := dl.TriggeredMessageForKeys(ctx, key, in.Key.Subkey)
+		tm, err := dl.TriggeredMessageForKeys(ctx, in.OrganizationEntityID, key, in.Key.Subkey)
 		if err != nil && errors.Cause(err) != dal.ErrNotFound {
 			return errors.Trace(err)
 		}
@@ -65,6 +65,17 @@ func (s *threadsServer) CreateTriggeredMessage(ctx context.Context, in *threadin
 		}
 		// Insert the associated triggered message item records preserving order
 		for i, m := range in.Messages {
+			if len(m.Attachments) > 0 {
+				resp, err := s.CloneAttachments(ctx, &threading.CloneAttachmentsRequest{
+					Attachments: m.Attachments,
+					OwnerType:   threading.CLONED_ATTACHMENT_OWNER_TRIGGERED_MESSAGE,
+					OwnerID:     tm.ID.String(),
+				})
+				if err != nil {
+					return errors.Trace(err)
+				}
+				m.Attachments = resp.Attachments
+			}
 			req, err := createPostMessageRequest(ctx, models.EmptyThreadID(), in.ActorEntityID, true, m)
 			if err != nil {
 				return errors.Trace(err)
@@ -126,7 +137,7 @@ func (s *threadsServer) TriggeredMessages(ctx context.Context, in *threading.Tri
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-		rtm, err := triggeredMessageForKeys(ctx, key, lk.Key.Subkey, s.dal)
+		rtm, err := triggeredMessageForKeys(ctx, in.OrganizationEntityID, key, lk.Key.Subkey, s.dal)
 		if errors.Cause(err) == dal.ErrNotFound {
 			return nil, grpc.Errorf(codes.NotFound, "TriggeredMessage not found for key(s) %s %s", key, lk.Key.Subkey)
 		} else if err != nil {
@@ -141,8 +152,8 @@ func (s *threadsServer) TriggeredMessages(ctx context.Context, in *threading.Tri
 	}, nil
 }
 
-func triggeredMessageForKeys(ctx context.Context, key, subkey string, dl dal.DAL) (*threading.TriggeredMessage, error) {
-	tm, err := dl.TriggeredMessageForKeys(ctx, key, subkey)
+func triggeredMessageForKeys(ctx context.Context, organizationID, key, subkey string, dl dal.DAL) (*threading.TriggeredMessage, error) {
+	tm, err := dl.TriggeredMessageForKeys(ctx, organizationID, key, subkey)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

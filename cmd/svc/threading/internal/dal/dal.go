@@ -231,7 +231,7 @@ type DAL interface {
 	CreateTriggeredMessage(ctx context.Context, model *models.TriggeredMessage) (models.TriggeredMessageID, error)
 	CreateTriggeredMessages(ctx context.Context, models []*models.TriggeredMessage) error
 	TriggeredMessage(ctx context.Context, id models.TriggeredMessageID, opts ...QueryOption) (*models.TriggeredMessage, error)
-	TriggeredMessageForKeys(ctx context.Context, triggerKey string, triggerSubkey string, opts ...QueryOption) (*models.TriggeredMessage, error)
+	TriggeredMessageForKeys(ctx context.Context, organizationEntityID, triggerKey, triggerSubkey string, opts ...QueryOption) (*models.TriggeredMessage, error)
 	DeleteTriggeredMessage(ctx context.Context, id models.TriggeredMessageID) (int64, error)
 	UpdateTriggeredMessage(ctx context.Context, id models.TriggeredMessageID, update *models.TriggeredMessageUpdate) (int64, error)
 
