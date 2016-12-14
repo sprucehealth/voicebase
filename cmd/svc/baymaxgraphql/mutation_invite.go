@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
+	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/invite/clientdata"
@@ -138,7 +139,7 @@ type associateInviteOutput struct {
 	InviteType                  string        `json:"inviteType"`
 	Values                      []inviteValue `json:"values,omitempty"`
 	VerifyPhoneNumber           bool          `json:"verifyPhoneNumber"`
-	PhoneNumberVerificationText string        `json:"phoneNumberVerificationText"`
+	PhoneNumberVerificationText *string       `json:"phoneNumberVerificationText"`
 }
 
 var associateInviteInputType = graphql.NewInputObject(
@@ -174,7 +175,7 @@ var associateInviteOutputType = graphql.NewObject(
 			"errorMessage":                &graphql.Field{Type: graphql.String},
 			"inviteType":                  &graphql.Field{Type: inviteTypeEnum},
 			"verifyPhoneNumber":           &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"phoneNumberVerificationText": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+			"phoneNumberVerificationText": &graphql.Field{Type: graphql.String},
 			"values": &graphql.Field{
 				Type:        graphql.NewList(graphql.NewNonNull(inviteValueType)),
 				Description: "Values is the set of data attached to the invite which matters the attribution data from Branch",
@@ -257,18 +258,18 @@ var associateInviteMutation = &graphql.Field{
 
 		var orgID string
 		var firstName string
-		phoneNumberVerificationText := "For security purposes, you'll receive a text message with a verification code."
+		var phoneNumberVerificationText *string
 		switch res.Invite.(type) {
 		case *invite.LookupInviteResponse_Patient:
 			firstName = res.GetPatient().Patient.FirstName
 			orgID = res.GetPatient().OrganizationEntityID
 			if res.GetPatient().InviteVerificationRequirement == invite.VERIFICATION_REQUIREMENT_PHONE_MATCH {
-				phoneNumberVerificationText = "Please enter the number your provider associated with your account."
+				phoneNumberVerificationText = ptr.String("Please enter the number your provider associated with your account.")
 			}
 		case *invite.LookupInviteResponse_Colleague:
 			firstName = res.GetColleague().Colleague.FirstName
 			orgID = res.GetColleague().OrganizationEntityID
-			phoneNumberVerificationText = "Please enter the number your provider associated with your account."
+			phoneNumberVerificationText = ptr.String("Please enter the number your provider associated with your account.")
 		case *invite.LookupInviteResponse_Organization:
 			orgID = res.GetOrganization().OrganizationEntityID
 		default:
