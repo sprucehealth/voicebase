@@ -235,6 +235,7 @@ func transformThreadToResponse(ctx context.Context, ram raccess.ResourceAccessor
 			Statuses:  []directory.EntityStatus{directory.EntityStatus_ACTIVE},
 			RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
 		})
+
 		if err != nil {
 			return nil, err
 		}

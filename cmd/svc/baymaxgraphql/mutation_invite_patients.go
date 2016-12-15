@@ -268,7 +268,7 @@ var invitePatientsMutation = &graphql.Field{
 
 						contacts = append(contacts, &directory.Contact{
 							ContactType: directory.ContactType_PHONE,
-							Value:       phoneNumber,
+							Value:       fpn,
 						})
 					}
 					if email != "" {
