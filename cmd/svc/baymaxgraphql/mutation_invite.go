@@ -8,7 +8,6 @@ import (
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
-	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
 	"github.com/sprucehealth/backend/svc/invite/clientdata"
@@ -139,7 +138,7 @@ type associateInviteOutput struct {
 	InviteType                  string        `json:"inviteType"`
 	Values                      []inviteValue `json:"values,omitempty"`
 	VerifyPhoneNumber           bool          `json:"verifyPhoneNumber"`
-	PhoneNumberVerificationText *string       `json:"phoneNumberVerificationText"`
+	PhoneNumberVerificationText string        `json:"phoneNumberVerificationText,omitempty"`
 }
 
 var associateInviteInputType = graphql.NewInputObject(
@@ -258,18 +257,18 @@ var associateInviteMutation = &graphql.Field{
 
 		var orgID string
 		var firstName string
-		var phoneNumberVerificationText *string
+		var phoneNumberVerificationText string
 		switch res.Invite.(type) {
 		case *invite.LookupInviteResponse_Patient:
 			firstName = res.GetPatient().Patient.FirstName
 			orgID = res.GetPatient().OrganizationEntityID
 			if res.GetPatient().InviteVerificationRequirement == invite.VERIFICATION_REQUIREMENT_PHONE_MATCH {
-				phoneNumberVerificationText = ptr.String("Please enter the number your provider associated with your account.")
+				phoneNumberVerificationText = "Please enter the number your provider associated with your account."
 			}
 		case *invite.LookupInviteResponse_Colleague:
 			firstName = res.GetColleague().Colleague.FirstName
 			orgID = res.GetColleague().OrganizationEntityID
-			phoneNumberVerificationText = ptr.String("Please enter the number your provider associated with your account.")
+			phoneNumberVerificationText = "Please enter the number your provider associated with your account."
 		case *invite.LookupInviteResponse_Organization:
 			orgID = res.GetOrganization().OrganizationEntityID
 		default:
