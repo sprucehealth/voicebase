@@ -175,3 +175,44 @@ func TestSavedQuery(t *testing.T) {
 		},
 	}, res)
 }
+
+func TestSavedQueryTemplates_Defaults(t *testing.T) {
+	t.Parallel()
+	dl := dalmock.New(t)
+	dir := mockdirectory.New(t)
+	sm := mocksettings.New(t)
+	mm := mockmedia.New(t)
+	defer mock.FinishAll(dl, dir, sm, mm)
+
+	srv := NewThreadsServer(nil, dl, nil, "arn", nil, dir, sm, mm, nil, nil, nil, nil, "WEBDOMAIN")
+	eID := "entity_123"
+
+	dl.Expect(mock.NewExpectation(dl.SavedQueryTemplates, eID).WithReturns(([]*models.SavedQuery)(nil), nil))
+
+	res, err := srv.SavedQueryTemplates(nil, &threading.SavedQueryTemplatesRequest{EntityID: eID})
+	test.OK(t, err)
+	test.Equals(t, len(models.DefaultSavedQueries), len(res.SavedQueries))
+	for i, sq := range res.SavedQueries {
+		ts := models.DefaultSavedQueries[i]
+		q, err := transformQueryToResponse(ts.Query)
+		test.OK(t, err)
+		typ := threading.SAVED_QUERY_TYPE_NORMAL
+		if ts.Type == models.SavedQueryTypeNotifications {
+			typ = threading.SAVED_QUERY_TYPE_NOTIFICATIONS
+		}
+		test.Equals(t, &threading.SavedQuery{
+			ID:                   "default-" + ts.ShortTitle,
+			Type:                 typ,
+			Ordinal:              int32(ts.Ordinal),
+			Query:                q,
+			ShortTitle:           ts.ShortTitle,
+			LongTitle:            ts.LongTitle,
+			Description:          ts.Description,
+			EntityID:             eID,
+			Hidden:               ts.Hidden,
+			NotificationsEnabled: ts.NotificationsEnabled,
+			Template:             true,
+			DefaultTemplate:      true,
+		}, sq)
+	}
+}

@@ -1419,7 +1419,10 @@ func (s *threadsServer) SavedQueryTemplates(ctx context.Context, in *threading.S
 	for i, q := range queries {
 		sq, err := transformSavedQueryToResponse(q)
 		if err != nil {
-			return nil, errors.Trace(fmt.Errorf("Failed to transform saved query: %s", err))
+			return nil, errors.Errorf("Failed to transform saved query: %s", err)
+		}
+		if sq.DefaultTemplate {
+			sq.EntityID = in.EntityID
 		}
 		res.SavedQueries[i] = sq
 	}

@@ -454,6 +454,7 @@ type SavedMessage struct {
 // unless an organization has a particular template of saved thread queries to be created.
 var DefaultSavedQueries = []*SavedQuery{
 	{
+		Template:             true,
 		Type:                 SavedQueryTypeNormal,
 		ShortTitle:           "All",
 		LongTitle:            "All Conversations",
@@ -463,6 +464,7 @@ var DefaultSavedQueries = []*SavedQuery{
 		Query:                &Query{},
 	},
 	{
+		Template:             true,
 		Type:                 SavedQueryTypeNormal,
 		ShortTitle:           "Patient",
 		LongTitle:            "All Patient Conversations",
@@ -472,6 +474,7 @@ var DefaultSavedQueries = []*SavedQuery{
 		Query:                &Query{Expressions: []*Expr{{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_PATIENT}}}},
 	},
 	{
+		Template:             true,
 		Type:                 SavedQueryTypeNormal,
 		ShortTitle:           "Team",
 		LongTitle:            "Team Conversations",
@@ -481,6 +484,7 @@ var DefaultSavedQueries = []*SavedQuery{
 		Query:                &Query{Expressions: []*Expr{{Value: &Expr_ThreadType_{ThreadType: EXPR_THREAD_TYPE_TEAM}}}},
 	},
 	{
+		Template:             true,
 		Type:                 SavedQueryTypeNormal,
 		ShortTitle:           "@Pages",
 		LongTitle:            "@ Pages",
@@ -490,6 +494,7 @@ var DefaultSavedQueries = []*SavedQuery{
 		Query:                &Query{Expressions: []*Expr{{Value: &Expr_Flag_{Flag: EXPR_FLAG_UNREAD_REFERENCE}}}},
 	},
 	{
+		Template:             true,
 		Type:                 SavedQueryTypeNormal,
 		ShortTitle:           "Following",
 		LongTitle:            "Patient Conversations You Follow",
@@ -499,6 +504,7 @@ var DefaultSavedQueries = []*SavedQuery{
 		Query:                &Query{Expressions: []*Expr{{Value: &Expr_Flag_{Flag: EXPR_FLAG_FOLLOWING}}}},
 	},
 	{
+		Template:             true,
 		Type:                 SavedQueryTypeNormal,
 		ShortTitle:           "Support",
 		LongTitle:            "Spruce Support",
@@ -509,6 +515,7 @@ var DefaultSavedQueries = []*SavedQuery{
 		Hidden:               true,
 	},
 	{
+		Template:             true,
 		Type:                 SavedQueryTypeNotifications,
 		ShortTitle:           "Notifications",
 		LongTitle:            "Notifications",

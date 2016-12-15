@@ -523,6 +523,7 @@ func transformSavedQueryToResponse(sq *models.SavedQuery) (*threading.SavedQuery
 		EntityID:             sq.EntityID,
 		Hidden:               sq.Hidden,
 		NotificationsEnabled: sq.NotificationsEnabled,
+		Template:             sq.Template,
 		DefaultTemplate:      defaultTemplate,
 	}, nil
 }
