@@ -158,10 +158,11 @@ func (d *dal) InsertInvite(ctx context.Context, invite *models.Invite) error {
 			}
 			item[parkedEntityIDKey] = &dynamodb.AttributeValue{S: &invite.ParkedEntityID}
 		}
-		if invite.InviterEntityID == "" {
-			return errors.Errorf("InviterEntityID required")
+
+		if invite.InviterEntityID != "" {
+			item[inviterEntityIDKey] = &dynamodb.AttributeValue{S: &invite.InviterEntityID}
 		}
-		item[inviterEntityIDKey] = &dynamodb.AttributeValue{S: &invite.InviterEntityID}
+
 		if invite.Email == "" {
 			return errors.Errorf("Email required")
 		}
