@@ -1389,9 +1389,12 @@ func (s *threadsServer) DeleteSavedQueries(ctx context.Context, in *threading.De
 	ids := make([]models.SavedQueryID, len(in.SavedQueryIDs))
 	var err error
 	for i, id := range in.SavedQueryIDs {
+		if strings.HasPrefix(id, "default") {
+			return nil, grpc.Errorf(codes.InvalidArgument, "Cannot delete default query %s", id)
+		}
 		ids[i], err = models.ParseSavedQueryID(id)
 		if err != nil {
-			return nil, errors.Trace(err)
+			return nil, grpc.Errorf(codes.InvalidArgument, "Invalid saved query ID %q", id)
 		}
 	}
 

@@ -142,6 +142,8 @@ message SavedQuery {
 	bool template = 11;
 	string long_title = 12;
 	string description = 13;
+	// default_template is true iff this template saved query is not concrete but rather from the default set
+	bool default_template = 14;
 }
 
 message Query {

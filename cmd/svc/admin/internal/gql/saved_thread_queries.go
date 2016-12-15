@@ -7,6 +7,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/common"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/client"
 	"github.com/sprucehealth/backend/cmd/svc/admin/internal/gql/models"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -31,6 +32,7 @@ var savedThreadQueryType = graphql.NewObject(
 			"notificationsEnabled": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"hidden":               &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"template":             &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"defaultTemplate":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		},
 	})
 
@@ -331,6 +333,116 @@ func updateSavedThreadQueryResolve(p graphql.ResolveParams) (interface{}, error)
 	}
 
 	return &updateSavedThreadQueryOutput{Success: true}, nil
+}
+
+// createDefaultSavedThreadQueryTemplates mutation
+
+var createDefaultSavedThreadQueryTemplatesField = &graphql.Field{
+	Description: "Actually create the default set of saved query templates for an organization instead of using the global defaults.",
+	Type:        graphql.NewNonNull(createDefaultSavedThreadQueryTemplatesOutputType),
+	Args: graphql.FieldConfigArgument{
+		common.InputFieldName: &graphql.ArgumentConfig{Type: graphql.NewNonNull(createDefaultSavedThreadQueryTemplatesInputType)},
+	},
+	Resolve: createDefaultSavedThreadQueryTemplatesResolve,
+}
+
+type createDefaultSavedThreadQueryTemplatesInput struct {
+	EntityID string `gql:"entityID,required"`
+}
+
+var createDefaultSavedThreadQueryTemplatesInputType = graphql.NewInputObject(
+	graphql.InputObjectConfig{
+		Name: "CreateDefaultSavedThreadQueryTemplatesInput",
+		Fields: graphql.InputObjectConfigFieldMap{
+			"entityID": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+		},
+	},
+)
+
+type createDefaultSavedThreadQueryTemplatesOutput struct {
+	Success      bool   `json:"success"`
+	ErrorMessage string `json:"errorMessage,omitempty"`
+}
+
+var createDefaultSavedThreadQueryTemplatesOutputType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "CreateDefaultSavedThreadQueryTemplatesOutput",
+		Fields: graphql.Fields{
+			"success":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorMessage": &graphql.Field{Type: graphql.String},
+		},
+		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
+			_, ok := value.(*createDefaultSavedThreadQueryTemplatesOutput)
+			return ok
+		},
+	},
+)
+
+func createDefaultSavedThreadQueryTemplatesResolve(p graphql.ResolveParams) (interface{}, error) {
+	var in createDefaultSavedThreadQueryTemplatesInput
+	if err := gqldecode.Decode(p.Args[common.InputFieldName].(map[string]interface{}), &in); err != nil {
+		switch err := err.(type) {
+		case gqldecode.ErrValidationFailed:
+			return nil, errors.Errorf("%s is invalid: %s", err.Field, err.Reason)
+		}
+		return nil, errors.Trace(err)
+	}
+
+	ctx := p.Context
+	directoryCli := client.Directory(p)
+	threadingCli := client.Threading(p)
+
+	// Make sure to only work with organizations as they're the only ones with template saved queries
+	_, err := directory.SingleEntity(ctx, directoryCli, &directory.LookupEntitiesRequest{
+		Key: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: in.EntityID,
+		},
+		RootTypes: []directory.EntityType{directory.EntityType_ORGANIZATION},
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	// Get the defaults
+	res, err := threadingCli.SavedQueryTemplates(ctx, &threading.SavedQueryTemplatesRequest{EntityID: in.EntityID})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	// Make sure they're actually default templates rather than concrete.
+	for _, q := range res.SavedQueries {
+		if !q.Template || !q.DefaultTemplate {
+			return &createDefaultSavedThreadQueryTemplatesOutput{
+				Success:      false,
+				ErrorMessage: "Saved queries contains a non-template or non-default template",
+			}, nil
+		}
+	}
+
+	par := conc.NewParallel()
+	for _, sq := range res.SavedQueries {
+		req := &threading.CreateSavedQueryRequest{
+			EntityID:             in.EntityID,
+			ShortTitle:           sq.ShortTitle,
+			LongTitle:            sq.LongTitle,
+			Description:          sq.Description,
+			Hidden:               sq.Hidden,
+			Type:                 sq.Type,
+			Ordinal:              sq.Ordinal,
+			NotificationsEnabled: sq.NotificationsEnabled,
+			Query:                sq.Query,
+			Template:             sq.Template,
+		}
+		par.Go(func() error {
+			_, err := threadingCli.CreateSavedQuery(ctx, req)
+			return errors.Trace(err)
+		})
+	}
+	if err := par.Wait(); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return &createDefaultSavedThreadQueryTemplatesOutput{Success: true}, nil
 }
 
 // Query

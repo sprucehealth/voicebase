@@ -503,8 +503,15 @@ func transformSavedQueryToResponse(sq *models.SavedQuery) (*threading.SavedQuery
 	default:
 		return nil, errors.Errorf("unknown saved query type %s", sq.Type)
 	}
+	defaultTemplate := sq.Template && !sq.ID.IsValid
+	var id string
+	if defaultTemplate {
+		id = "default-" + sq.ShortTitle
+	} else {
+		id = sq.ID.String()
+	}
 	return &threading.SavedQuery{
-		ID:                   sq.ID.String(),
+		ID:                   id,
 		Type:                 t,
 		Ordinal:              int32(sq.Ordinal),
 		Query:                query,
@@ -516,6 +523,7 @@ func transformSavedQueryToResponse(sq *models.SavedQuery) (*threading.SavedQuery
 		EntityID:             sq.EntityID,
 		Hidden:               sq.Hidden,
 		NotificationsEnabled: sq.NotificationsEnabled,
+		DefaultTemplate:      defaultTemplate,
 	}, nil
 }
 

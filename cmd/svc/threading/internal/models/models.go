@@ -509,13 +509,14 @@ var DefaultSavedQueries = []*SavedQuery{
 		Hidden:               true,
 	},
 	{
-		Type:        SavedQueryTypeNotifications,
-		ShortTitle:  "Notifications",
-		LongTitle:   "Notifications",
-		Description: "Hidden query to populate an accurate count of notifications",
-		Query:       &Query{},
-		Ordinal:     1000000000,
-		Hidden:      true,
+		Type:                 SavedQueryTypeNotifications,
+		ShortTitle:           "Notifications",
+		LongTitle:            "Notifications",
+		Description:          "Hidden query to populate an accurate count of notifications",
+		Query:                &Query{},
+		Ordinal:              1000000000,
+		NotificationsEnabled: false,
+		Hidden:               true,
 	},
 }
 

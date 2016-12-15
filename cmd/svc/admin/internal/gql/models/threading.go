@@ -254,6 +254,7 @@ type SavedThreadQuery struct {
 	NotificationsEnabled bool   `json:"notificationsEnabled"`
 	Hidden               bool   `json:"hidden"`
 	Template             bool   `json:"template"`
+	DefaultTemplate      bool   `json:"defaultTemplate"`
 }
 
 // TransformSavedThreadQueriesToModel transforms a set of internal saved thread queries into something understood by graphql
@@ -270,22 +271,23 @@ func TransformSavedThreadQueriesToModel(sqs []*threading.SavedQuery) ([]*SavedTh
 }
 
 // TransformSavedThreadQueryToModel transforms an internal saved thread query into something understood by graphql
-func TransformSavedThreadQueryToModel(sm *threading.SavedQuery) (*SavedThreadQuery, error) {
-	query, err := threading.FormatQuery(sm.Query)
+func TransformSavedThreadQueryToModel(sq *threading.SavedQuery) (*SavedThreadQuery, error) {
+	query, err := threading.FormatQuery(sq.Query)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &SavedThreadQuery{
-		ID:                   sm.ID,
+		ID:                   sq.ID,
 		Query:                query,
-		ShortTitle:           sm.ShortTitle,
-		LongTitle:            sm.LongTitle,
-		Description:          sm.Description,
-		Unread:               int(sm.Unread),
-		Total:                int(sm.Total),
-		Ordinal:              int(sm.Ordinal),
-		NotificationsEnabled: sm.NotificationsEnabled,
-		Hidden:               sm.Hidden,
-		Template:             sm.Template,
+		ShortTitle:           sq.ShortTitle,
+		LongTitle:            sq.LongTitle,
+		Description:          sq.Description,
+		Unread:               int(sq.Unread),
+		Total:                int(sq.Total),
+		Ordinal:              int(sq.Ordinal),
+		NotificationsEnabled: sq.NotificationsEnabled,
+		Hidden:               sq.Hidden,
+		Template:             sq.Template,
+		DefaultTemplate:      sq.DefaultTemplate,
 	}, nil
 }
