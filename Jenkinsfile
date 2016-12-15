@@ -16,7 +16,7 @@ node {
 			checkout scm
 
 			// Remove ignored files
-			sh 'git clean -X -f'
+			sh 'git clean -X -f -d'
 
 			// Remove code coverage files (not always deleted by git clean if a directory is removed)
 			sh "find . -name cover.out -exec rm '{}' \\;"
