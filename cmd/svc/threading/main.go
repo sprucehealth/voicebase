@@ -49,7 +49,7 @@ var (
 	// Services
 	flagCareAddr      = flag.String("care_addr", "_care._tcp.service", "host:port of care service")
 	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "host:port of directory service")
-	flagLayoutAddr    = flag.String("layout_addr", "_care._tcp.service", "host:port of layout service")
+	flagLayoutAddr    = flag.String("layout_addr", "_layout._tcp.service", "host:port of layout service")
 	flagMediaAddr     = flag.String("media_addr", "_media._tcp.service", "host:port of media service")
 	flagPaymentsAddr  = flag.String("payments_addr", "_payments._tcp.service", "host:port of payments service")
 	flagSettingsAddr  = flag.String("settings_addr", "_settings._tcp.service", "host:port of settings service")
