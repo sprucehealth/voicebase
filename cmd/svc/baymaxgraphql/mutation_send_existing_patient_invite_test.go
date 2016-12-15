@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/settings"
 )
 
 func TestSendExistingPatientInvite(t *testing.T) {
@@ -76,6 +77,25 @@ func TestSendExistingPatientInvite(t *testing.T) {
 			Type: directory.EntityType_INTERNAL,
 			Memberships: []*directory.Entity{
 				{ID: "e_org", Type: directory.EntityType_ORGANIZATION},
+			},
+		},
+	}, nil))
+
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.GetValues, &settings.GetValuesRequest{
+		NodeID: "e_org",
+		Keys: []*settings.ConfigKey{
+			{
+				Key: invite.ConfigKeyTwoFactorVerificationForSecureConversation,
+			},
+		},
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_Boolean{
+					Boolean: &settings.BooleanValue{
+						Value: true,
+					},
+				},
 			},
 		},
 	}, nil))

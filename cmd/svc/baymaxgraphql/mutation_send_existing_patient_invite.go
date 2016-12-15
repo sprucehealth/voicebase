@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/graphql"
 	"github.com/sprucehealth/graphql/gqlerrors"
 )
@@ -40,6 +41,7 @@ const (
 	sendPatientInviteErrorCodeInvalidEmailContactID = "INVALID_EMAIL_CONTACT_ID"
 	sendPaitentInviteErrorCodePhoneNumberNotFound   = "PHONE_NUMBER_NOT_FOUND"
 	sendPaitentInviteErrorCodeEmailNotFound         = "EMAIL_NOT_FOUND"
+	sendPatientInviteErrorCodeEmailOrPhoneRequired  = "EMAIL_OR_PHONE_REQUIRED"
 )
 
 var sendExistingPatientInviteErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
@@ -60,6 +62,10 @@ var sendExistingPatientInviteErrorCodeEnum = graphql.NewEnum(graphql.EnumConfig{
 		sendPaitentInviteErrorCodeEmailNotFound: &graphql.EnumValueConfig{
 			Value:       sendPaitentInviteErrorCodeEmailNotFound,
 			Description: "Email not found",
+		},
+		sendPatientInviteErrorCodeEmailOrPhoneRequired: &graphql.EnumValueConfig{
+			Value:       sendPatientInviteErrorCodeEmailOrPhoneRequired,
+			Description: "Email or phone number required",
 		},
 	},
 })
@@ -177,20 +183,43 @@ var sendExistingPatientInviteMutation = &graphql.Field{
 					}
 				}
 
-				if phoneNumber == "" {
-					return &sendExistingPatientInviteOutput{
-						Success:      false,
-						ErrorCode:    sendPaitentInviteErrorCodePhoneNumberNotFound,
-						ErrorMessage: "No phone number found for patient",
-					}, nil
+				val, err := settings.GetBooleanValue(ctx, svc.settings, &settings.GetValuesRequest{
+					NodeID: in.OrganizationID,
+					Keys: []*settings.ConfigKey{
+						{
+							Key: invite.ConfigKeyTwoFactorVerificationForSecureConversation,
+						},
+					},
+				})
+				if err != nil {
+					return nil, errors.InternalError(ctx, err)
 				}
 
-				if email == "" {
-					return &sendExistingPatientInviteOutput{
-						Success:      false,
-						ErrorCode:    sendPaitentInviteErrorCodeEmailNotFound,
-						ErrorMessage: "No phone number found for patient",
-					}, nil
+				requirePhoneAndEmailForInvite := val.Value
+				if requirePhoneAndEmailForInvite {
+					if phoneNumber == "" {
+						return &sendExistingPatientInviteOutput{
+							Success:      false,
+							ErrorCode:    sendPaitentInviteErrorCodePhoneNumberNotFound,
+							ErrorMessage: "No phone number found for patient",
+						}, nil
+					}
+
+					if email == "" {
+						return &sendExistingPatientInviteOutput{
+							Success:      false,
+							ErrorCode:    sendPaitentInviteErrorCodeEmailNotFound,
+							ErrorMessage: "No email found for patient",
+						}, nil
+					}
+				} else {
+					if phoneNumber == "" && email == "" {
+						return &sendExistingPatientInviteOutput{
+							Success:      false,
+							ErrorCode:    sendPatientInviteErrorCodeEmailOrPhoneRequired,
+							ErrorMessage: "Email or phone number required for invite",
+						}, nil
+					}
 				}
 
 				if _, err := svc.invite.InvitePatients(ctx, &invite.InvitePatientsRequest{

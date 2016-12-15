@@ -261,19 +261,24 @@ var invitePatientsMutation = &graphql.Field{
 					fpn, _ := phone.Format(phoneNumber, phone.E164)
 					pat.PhoneNumber = fpn
 					pat.Email = email
+
+					contacts := make([]*directory.Contact, 0, 2)
+					if phoneNumber != "" {
+						contacts = append(contacts, &directory.Contact{
+							ContactType: directory.ContactType_PHONE,
+							Value:       phoneNumber,
+						})
+					}
+					if email != "" {
+						contacts = append(contacts, &directory.Contact{
+							ContactType: directory.ContactType_EMAIL,
+							Value:       email,
+						})
+					}
 					patientEntity, err := ram.CreateEntity(ctx, &directory.CreateEntityRequest{
 						Type: directory.EntityType_PATIENT,
 						InitialMembershipEntityID: orgID,
-						Contacts: []*directory.Contact{
-							{
-								ContactType: directory.ContactType_EMAIL,
-								Value:       email,
-							},
-							{
-								ContactType: directory.ContactType_PHONE,
-								Value:       pat.PhoneNumber,
-							},
-						},
+						Contacts:                  contacts,
 						EntityInfo: &directory.EntityInfo{
 							FirstName: pat.FirstName,
 							LastName:  lastName,
