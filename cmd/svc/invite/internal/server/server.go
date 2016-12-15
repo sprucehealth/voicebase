@@ -325,9 +325,9 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 					deliveryChannels = append(deliveryChannels, inviteDeliverySMS)
 				}
 			} else if p.Email != "" {
-				deliveryChannels = append(deliveryChannels, invite.PatientInviteChannelPreferenceEmail)
+				deliveryChannels = append(deliveryChannels, inviteDeliveryEmail)
 			} else if p.PhoneNumber != "" {
-				deliveryChannels = append(deliveryChannels, invite.PatientInviteChannelPreferenceSMS)
+				deliveryChannels = append(deliveryChannels, inviteDeliverySMS)
 			}
 		}
 
