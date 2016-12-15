@@ -257,13 +257,15 @@ var invitePatientsMutation = &graphql.Field{
 					// Create a parked entity for the account
 					email, _ := m["email"].(string)
 					phoneNumber, _ := m["phoneNumber"].(string)
-					// Can only ignore this err because we checked it above
-					fpn, _ := phone.Format(phoneNumber, phone.E164)
-					pat.PhoneNumber = fpn
+
 					pat.Email = email
 
 					contacts := make([]*directory.Contact, 0, 2)
 					if phoneNumber != "" {
+						// Can only ignore this err because we checked it above
+						fpn, _ := phone.Format(phoneNumber, phone.E164)
+						pat.PhoneNumber = fpn
+
 						contacts = append(contacts, &directory.Contact{
 							ContactType: directory.ContactType_PHONE,
 							Value:       phoneNumber,
