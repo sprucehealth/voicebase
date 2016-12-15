@@ -251,17 +251,6 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 	if in.OrganizationEntityID == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationEntityID is required")
 	}
-	// Validate all patient information
-	for _, p := range in.Patients {
-		if p.PhoneNumber == "" {
-			return nil, grpc.Errorf(codes.InvalidArgument, "Phone number is required")
-		}
-		pn, err := phone.ParseNumber(p.PhoneNumber)
-		if err != nil {
-			return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Phone number '%s' is invalid", p.PhoneNumber))
-		}
-		p.PhoneNumber = pn.String()
-	}
 
 	// Lookup org to get name
 	org, err := s.getOrg(ctx, in.OrganizationEntityID)
@@ -293,6 +282,21 @@ func (s *server) InvitePatients(ctx context.Context, in *invite.InvitePatientsRe
 		inviter, err = s.getInternalEntity(ctx, in.InviterEntityID)
 		if err != nil {
 			return nil, err
+		}
+	}
+
+	// Validate all patient information
+	for _, p := range in.Patients {
+		if p.PhoneNumber == "" && requirePhoneAndEmailForSecureConversationCreation.Value {
+			return nil, grpc.Errorf(codes.InvalidArgument, "Phone number is required")
+		}
+
+		if p.PhoneNumber != "" {
+			pn, err := phone.ParseNumber(p.PhoneNumber)
+			if err != nil {
+				return nil, grpc.Errorf(codes.InvalidArgument, fmt.Sprintf("Phone number '%s' is invalid", p.PhoneNumber))
+			}
+			p.PhoneNumber = pn.String()
 		}
 	}
 
