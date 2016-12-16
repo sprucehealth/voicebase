@@ -62,11 +62,16 @@ func processAwayMessage(ctx context.Context, dl dal.DAL, directoryClient directo
 	if ptiev.Item.GetMessage().Source != nil {
 		channel = &ptiev.Item.GetMessage().Source.Channel
 	}
+	var destinations []*threading.Endpoint
+	if ptiev.Item.GetMessage().Source != nil {
+		destinations = []*threading.Endpoint{ptiev.Item.GetMessage().Source}
+	}
 	return errors.Trace(postMessagesForTriggeredMessage(
 		ctx,
 		dl,
 		threadClient,
 		thread.ID,
+		destinations,
 		thread.OrganizationID,
 		models.TriggeredMessageKeyAwayMessage,
 		threading.AwayMessageSubkey(ent.Type, thType, channel),

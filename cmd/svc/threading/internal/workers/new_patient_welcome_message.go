@@ -61,6 +61,7 @@ func processNewPatientWelcomeMessage(ctx context.Context, dl dal.DAL, directoryC
 		dl,
 		threadClient,
 		thread.ID,
+		[]*threading.Endpoint{},
 		thread.OrganizationID,
 		models.TriggeredMessageKeyNewPatient,
 		threading.WelcomeMessageSubkey(ent.Source),

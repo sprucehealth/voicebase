@@ -79,6 +79,7 @@ func postMessagesForTriggeredMessage(
 	dl dal.DAL,
 	threadClient triggeredMessageThreadClient,
 	threadID models.ThreadID,
+	destinations []*threading.Endpoint,
 	orgID, key, subkey string) error {
 	triggeredMessage, err := dl.TriggeredMessageForKeys(ctx, orgID, key, subkey)
 	if errors.Cause(err) == dal.ErrNotFound {
@@ -110,7 +111,7 @@ func postMessagesForTriggeredMessage(
 			messages[i] = &threading.MessagePost{
 				Internal:     tmi.Internal,
 				Source:       message.Source,
-				Destinations: message.Destinations,
+				Destinations: destinations,
 				Text:         message.Text,
 				Attachments:  message.Attachments,
 				Title:        message.Title,
