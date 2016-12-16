@@ -2047,7 +2047,6 @@ func (s *threadsServer) hydrateThreadForViewer(ctx context.Context, ts []*thread
 		}
 	}
 	if len(tIDs) == 0 {
-		golog.Debugf("No threadIDs populated..returning original list")
 		return ts, nil
 	}
 
@@ -2064,9 +2063,7 @@ func (s *threadsServer) hydrateThreadForViewer(ctx context.Context, ts []*thread
 		}
 
 		// Filter out threads which the viewer doesn't have access to
-		golog.Debugf("Thread type %s", t.Type)
 		if t.Type != threading.THREAD_TYPE_TEAM || (te != nil && te.Member) {
-			golog.Debugf("Appending thread %s to hydrated list", t.ID)
 			ts2 = append(ts2, t)
 		}
 	}
