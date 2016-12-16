@@ -69,7 +69,7 @@ func (s *threadsServer) CreateTriggeredMessage(ctx context.Context, in *threadin
 				resp, err := s.CloneAttachments(ctx, &threading.CloneAttachmentsRequest{
 					Attachments: m.Attachments,
 					OwnerType:   threading.CLONED_ATTACHMENT_OWNER_TRIGGERED_MESSAGE,
-					OwnerID:     tm.ID.String(),
+					OwnerID:     tmID.String(),
 				})
 				if err != nil {
 					return errors.Trace(err)
