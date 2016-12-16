@@ -194,11 +194,12 @@ func makeVerifyPhoneNumberResolve(forAccountCreation bool) func(p graphql.Resolv
 					}
 
 					contacts := directory.FilterContacts(ent, directory.ContactType_PHONE)
-					if len(contacts) == 0 {
-						return nil, errors.InternalError(ctx, errors.Errorf("no phone number for patient %s", ent.ID))
-					}
 
 					if inv.GetPatient().InviteVerificationRequirement == invite.VERIFICATION_REQUIREMENT_PHONE_MATCH {
+						if len(contacts) == 0 {
+							return nil, errors.InternalError(ctx, errors.Errorf("no phone number for patient %s", ent.ID))
+						}
+
 						if contacts[0].Value != pn.String() {
 							return &verifyPhoneNumberOutput{
 								ClientMutationID: in.ClientMutationID,
