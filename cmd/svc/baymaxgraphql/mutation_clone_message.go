@@ -227,6 +227,10 @@ var cloneMessageMutation = &graphql.Field{
 }
 
 func cloneAttachments(ctx context.Context, ram raccess.ResourceAccessor, acc *auth.Account, attachments []*threading.Attachment, forThread *threading.Thread) (cloned []*threading.Attachment, unsupported []*threading.Attachment, err error) {
+	if len(attachments) == 0 {
+		return nil, nil, nil
+	}
+
 	var unsupportedAttachments []*threading.Attachment
 	var supportedAttachments []*threading.Attachment
 	par := conc.NewParallel()
