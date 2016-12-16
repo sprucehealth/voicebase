@@ -132,12 +132,13 @@ func (s *service) processDeviceRegistration(ctx context.Context, data string) er
 	// Perform the update here to support shared devices. We don't want to send push for an account that is no longer on a device
 	golog.Debugf("Updating existing push config with externalID %s for device registration.", registrationInfo.ExternalGroupID)
 	_, err = s.dl.UpdatePushConfig(pushConfig.ID, &dal.PushConfigUpdate{
-		ExternalGroupID: &registrationInfo.ExternalGroupID,
-		Platform:        &registrationInfo.Platform,
-		PlatformVersion: &registrationInfo.PlatformVersion,
-		DeviceID:        &registrationInfo.DeviceID,
-		AppVersion:      &registrationInfo.AppVersion,
-		DeviceToken:     []byte(registrationInfo.DeviceToken),
+		ExternalGroupID:  &registrationInfo.ExternalGroupID,
+		Platform:         &registrationInfo.Platform,
+		PlatformVersion:  &registrationInfo.PlatformVersion,
+		DeviceID:         &registrationInfo.DeviceID,
+		AppVersion:       &registrationInfo.AppVersion,
+		DeviceToken:      []byte(registrationInfo.DeviceToken),
+		EnableRetryCount: ptr.Int(0),
 	})
 	return errors.Trace(err)
 }
@@ -157,6 +158,7 @@ func (s *service) generateEndpointARN(info *notification.DeviceRegistrationInfo)
 		golog.Errorf("No SNS arn provided to register device %s, %s, %s", info.ExternalGroupID, info.Platform, info.DeviceID)
 		return "", nil
 	}
+
 	createEndpointResponse, err := s.snsAPI.CreatePlatformEndpoint(&sns.CreatePlatformEndpointInput{
 		PlatformApplicationArn: &arn,
 		Token: &info.DeviceToken,
@@ -164,6 +166,17 @@ func (s *service) generateEndpointARN(info *notification.DeviceRegistrationInfo)
 	if err != nil {
 		return "", errors.Trace(err)
 	}
+
+	// ensure that the endpoint is not disabled by setting the enabled attribute
+	if _, err := s.snsAPI.SetEndpointAttributes(&sns.SetEndpointAttributesInput{
+		EndpointArn: createEndpointResponse.EndpointArn,
+		Attributes: map[string]*string{
+			"Enabled": ptr.String("true"),
+		},
+	}); err != nil {
+		golog.Errorf("unable to update the endpoint attributes for %s : %s", *createEndpointResponse.EndpointArn, err)
+	}
+
 	return *createEndpointResponse.EndpointArn, nil
 }
 
@@ -335,12 +348,51 @@ func (s *service) sendPushNotificationToExternalGroupID(externalGroupID string, 
 			aerr, ok := err.(awserr.Error)
 			if ok && aerr.Code() == endpointDisabledAWSErrCode {
 				golog.Infof("Encountered disabled endpoint %+v", pushConfig)
-				// If an endpoint has been disabled then make an attempt to delete it since it is no longer valid
-				conc.Go(func() {
-					if _, err := s.dl.DeletePushConfig(pushConfig.ID); err != nil {
-						golog.Errorf("Encountered error while attempting delete of disabled endpoint %s: %s", pushConfig.ID, err)
+
+				// attempt to re-enable an endpoint if it has been disabled
+				// up to a maximum of 3 times. An endpoint may have been disabled
+				// asynchonously. So re-enabling an endpoint and attempting to push again
+				// may cause the push to be successfully delivered.
+				if pushConfig.EnableRetryCount < 3 {
+
+					retryCount := pushConfig.EnableRetryCount
+
+					// re-enable the endpoint
+					if _, err := s.snsAPI.SetEndpointAttributes(&sns.SetEndpointAttributesInput{
+						EndpointArn: &pushConfig.PushEndpoint,
+						Attributes: map[string]*string{
+							"Enabled": ptr.String("true"),
+						},
+					}); err != nil {
+						golog.Errorf("unable to update the endpoint attributes for %s : %s", pushConfig.PushEndpoint, err)
 					}
-				})
+
+					// attempt to publish the message again
+					if _, err := s.snsAPI.Publish(&sns.PublishInput{
+						Message:          ptr.String(string(msg)),
+						MessageStructure: jsonStructure,
+						TargetArn:        &pushConfig.PushEndpoint,
+					}); err != nil {
+						golog.Errorf("unable to publish message to endpoint %s on retry : %s", pushConfig.PushEndpoint, err)
+						retryCount++
+					} else {
+						retryCount = 0
+					}
+
+					if _, err := s.dl.UpdatePushConfig(pushConfig.ID, &dal.PushConfigUpdate{
+						EnableRetryCount: ptr.Int(retryCount),
+					}); err != nil {
+						golog.Errorf("unable to update the push config for %s : %s", pushConfig.ID, err)
+					}
+
+				} else {
+					// If an endpoint has been disabled then make an attempt to delete it since it is no longer valid
+					conc.Go(func() {
+						if _, err := s.dl.DeletePushConfig(pushConfig.ID); err != nil {
+							golog.Errorf("Encountered error while attempting delete of disabled endpoint %s: %s", pushConfig.ID, err)
+						}
+					})
+				}
 			} else {
 				golog.Errorf(err.Error())
 				// continue so that we do a best effort to publish to all endpoints.

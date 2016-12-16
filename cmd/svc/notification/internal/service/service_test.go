@@ -93,6 +93,13 @@ func TestProcessNewDeviceRegistrationIOS(t *testing.T) {
 		EndpointArn: ptr.String("iOSEnpointARN"),
 	}, nil))
 
+	snsAPI.Expect(mock.NewExpectation(snsAPI.SetEndpointAttributes, &sns.SetEndpointAttributesInput{
+		EndpointArn: ptr.String("iOSEnpointARN"),
+		Attributes: map[string]*string{
+			"Enabled": ptr.String("true"),
+		},
+	}))
+
 	// Insert a new record for the device
 	dl.Expect(mock.NewExpectation(dl.InsertPushConfig, &dal.PushConfig{
 		ExternalGroupID: "ExternalGroupID",
@@ -147,6 +154,13 @@ func TestProcessNewDeviceRegistrationAndroid(t *testing.T) {
 	}).WithReturns(&sns.CreatePlatformEndpointOutput{
 		EndpointArn: ptr.String("androidEnpointARN"),
 	}, nil))
+
+	snsAPI.Expect(mock.NewExpectation(snsAPI.SetEndpointAttributes, &sns.SetEndpointAttributesInput{
+		EndpointArn: ptr.String("androidEnpointARN"),
+		Attributes: map[string]*string{
+			"Enabled": ptr.String("true"),
+		},
+	}))
 
 	// Insert a new record for the device
 	dl.Expect(mock.NewExpectation(dl.InsertPushConfig, &dal.PushConfig{
@@ -212,12 +226,13 @@ func TestProcessExistingDeviceRegistrationAndroid(t *testing.T) {
 			IsValid: true,
 		},
 	}, &dal.PushConfigUpdate{
-		DeviceID:        ptr.String("DeviceID"),
-		ExternalGroupID: ptr.String("ExternalGroupID"),
-		Platform:        ptr.String("android"),
-		PlatformVersion: ptr.String("PlatformVersion"),
-		AppVersion:      ptr.String("AppVersion"),
-		DeviceToken:     []byte("DeviceToken"),
+		DeviceID:         ptr.String("DeviceID"),
+		ExternalGroupID:  ptr.String("ExternalGroupID"),
+		Platform:         ptr.String("android"),
+		PlatformVersion:  ptr.String("PlatformVersion"),
+		AppVersion:       ptr.String("AppVersion"),
+		DeviceToken:      []byte("DeviceToken"),
+		EnableRetryCount: ptr.Int(0),
 	}))
 
 	cSvc.processDeviceRegistration(context.Background(), string(driData))
@@ -530,7 +545,7 @@ func TestProcessNotification(t *testing.T) {
 	cSvc.processNotification(context.Background(), string(notificationData))
 }
 
-func TestProcessNotificationDisabledEndpoint(t *testing.T) {
+func TestProcessNotificationDisabledEndpoint_Retry(t *testing.T) {
 	dl := testdal.NewMockDAL(t)
 	dc := dmock.New(t)
 	snsAPI := mock.NewSNSAPI(t)
@@ -587,6 +602,139 @@ func TestProcessNotificationDisabledEndpoint(t *testing.T) {
 	// Lookup the push configs for each external group id (account)
 	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_1").WithReturns([]*dal.PushConfig{
 		{ID: pcID, PushEndpoint: "account1:pushEndpoint1", Platform: "iOS"},
+		{PushEndpoint: "account1:pushEndpoint2", Platform: "android"},
+	}, nil))
+
+	// Build out expected notification structure
+	iData, err := json.Marshal(&iOSPushNotification{
+		PushData: &iOSPushData{
+			Sound: pushNotificationSoundFileCAF,
+			Alert: "ShortMessage",
+			Badge: ptr.Int(1),
+		},
+		URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
+		ThreadID:       "ThreadID",
+		OrganizationID: "OrganizationID",
+		MessageID:      "ItemID",
+		SavedQueryID:   "SavedQueryID",
+	})
+	test.OK(t, err)
+	aData, err := json.Marshal(&androidPushNotification{
+		CollapseKey: "collapse",
+		Priority:    "normal",
+		PushData: &androidPushData{
+			UnreadCount:    1,
+			Message:        "ShortMessage",
+			URL:            deeplink.ThreadMessageURLShareable("testDomain", "OrganizationID", "ThreadID", "ItemID"),
+			ThreadID:       "ThreadID",
+			OrganizationID: "OrganizationID",
+			MessageID:      "ItemID",
+			SavedQueryID:   "SavedQueryID",
+			PushID:         "dedupe",
+			Sound:          pushNotificationSoundFileMP3,
+		},
+	})
+	test.OK(t, err)
+	snsNote := &snsNotification{
+		DefaultMessage: "ShortMessage",
+		IOSSandBox:     string(iData),
+		IOS:            string(iData),
+		Android:        string(aData),
+	}
+	msg, err := json.Marshal(snsNote)
+	test.OK(t, err)
+
+	// Send out the push notifications
+	snsAPI.Expect(mock.NewExpectation(snsAPI.Publish, &sns.PublishInput{
+		Message:          ptr.String(string(msg)),
+		MessageStructure: jsonStructure,
+		TargetArn:        ptr.String("account1:pushEndpoint1"),
+	}).WithReturns((*sns.PublishOutput)(nil), awserr.New(endpointDisabledAWSErrCode, "So disabled", errors.New(":("))))
+
+	// attempt to enable
+	snsAPI.Expect(mock.NewExpectation(snsAPI.SetEndpointAttributes, &sns.SetEndpointAttributesInput{
+		EndpointArn: ptr.String("account1:pushEndpoint1"),
+		Attributes: map[string]*string{
+			"Enabled": ptr.String("true"),
+		},
+	}))
+	snsAPI.Expect(mock.NewExpectation(snsAPI.Publish, &sns.PublishInput{
+		Message:          ptr.String(string(msg)),
+		MessageStructure: jsonStructure,
+		TargetArn:        ptr.String("account1:pushEndpoint1"),
+	}).WithReturns((*sns.PublishOutput)(nil), awserr.New(endpointDisabledAWSErrCode, "So disabled", errors.New(":("))))
+
+	// update push config
+	dl.Expect(mock.NewExpectation(dl.UpdatePushConfig, pcID, &dal.PushConfigUpdate{
+		EnableRetryCount: ptr.Int(1),
+	}))
+
+	snsAPI.Expect(mock.NewExpectation(snsAPI.Publish, &sns.PublishInput{
+		Message:          ptr.String(string(msg)),
+		MessageStructure: jsonStructure,
+		TargetArn:        ptr.String("account1:pushEndpoint2"),
+	}))
+
+	cSvc.processNotification(context.Background(), string(notificationData))
+}
+
+func TestProcessNotificationDisabledEndpoint_Delete(t *testing.T) {
+	dl := testdal.NewMockDAL(t)
+	dc := dmock.New(t)
+	snsAPI := mock.NewSNSAPI(t)
+	sqsAPI := mock.NewSQSAPI(t)
+	sc := smock.New(t)
+	defer mock.FinishAll(dl, dc, snsAPI, sqsAPI, sc)
+
+	svc := New(dl, dc, sc, &Config{
+		NotificationSQSURL:              notificationSQSURL,
+		AppleDeviceRegistrationSNSARN:   appleDeviceRegistrationSNSARN,
+		AndriodDeviceRegistrationSNSARN: andriodDeviceRegistrationSNSARN,
+		SQSAPI:    sqsAPI,
+		SNSAPI:    snsAPI,
+		WebDomain: "testDomain",
+	})
+	cSvc := svc.(*service)
+
+	pcID, err := dal.NewPushConfigID()
+	test.OK(t, err)
+
+	notificationData, err := json.Marshal(&notification.Notification{
+		ShortMessages: map[string]string{
+			"entity:1": "ShortMessage",
+		},
+		UnreadCounts: map[string]int{
+			"entity:1": 1,
+		},
+		ThreadID:         "ThreadID",
+		OrganizationID:   "OrganizationID",
+		MessageID:        "ItemID",
+		SavedQueryID:     "SavedQueryID",
+		EntitiesToNotify: []string{"entity:1", "entity:2"},
+		CollapseKey:      "collapse",
+		DedupeKey:        "dedupe",
+	})
+	test.OK(t, err)
+
+	expectFilterNodesWithNotificationsDisabled(t, sc, []string{"entity:1", "entity:2"}, []bool{true, false})
+
+	sc.Expect(mock.NewExpectation(sc.GetValues, &settings.GetValuesRequest{
+		Keys:   []*settings.ConfigKey{{Key: notification.BadgeCount}},
+		NodeID: "entity:1",
+	}).WithReturns(&settings.GetValuesResponse{}, nil))
+
+	// Lookup account IDs for the entities via their external identifiers
+	dc.Expect(mock.NewExpectation(dc.ExternalIDs, &directory.ExternalIDsRequest{
+		EntityIDs: []string{"entity:1"},
+	}).WithReturns(&directory.ExternalIDsResponse{
+		ExternalIDs: []*directory.ExternalID{
+			{ID: "account_1", EntityID: "entity:1"},
+		},
+	}, nil))
+
+	// Lookup the push configs for each external group id (account)
+	dl.Expect(mock.NewExpectation(dl.PushConfigsForExternalGroupID, "account_1").WithReturns([]*dal.PushConfig{
+		{ID: pcID, PushEndpoint: "account1:pushEndpoint1", Platform: "iOS", EnableRetryCount: 3},
 		{PushEndpoint: "account1:pushEndpoint2", Platform: "android"},
 	}, nil))
 

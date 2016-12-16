@@ -92,29 +92,31 @@ type PushConfigID struct {
 
 // PushConfig represents a push_config record
 type PushConfig struct {
-	ID              PushConfigID
-	ExternalGroupID string
-	Platform        string
-	PlatformVersion string
-	AppVersion      string
-	DeviceID        string
-	DeviceToken     []byte
-	PushEndpoint    string
-	Device          string
-	DeviceModel     string
-	Modified        time.Time
-	Created         time.Time
+	ID               PushConfigID
+	ExternalGroupID  string
+	Platform         string
+	PlatformVersion  string
+	AppVersion       string
+	DeviceID         string
+	DeviceToken      []byte
+	PushEndpoint     string
+	Device           string
+	DeviceModel      string
+	Modified         time.Time
+	Created          time.Time
+	EnableRetryCount int
 }
 
 // PushConfigUpdate represents the mutable aspects of a push_config record
 type PushConfigUpdate struct {
-	DeviceID        *string
-	DeviceToken     []byte
-	PushEndpoint    *string
-	ExternalGroupID *string
-	Platform        *string
-	PlatformVersion *string
-	AppVersion      *string
+	DeviceID         *string
+	DeviceToken      []byte
+	PushEndpoint     *string
+	ExternalGroupID  *string
+	Platform         *string
+	PlatformVersion  *string
+	AppVersion       *string
+	EnableRetryCount *int
 }
 
 // InsertPushConfig inserts a push_config record
@@ -204,6 +206,9 @@ func (d *dal) UpdatePushConfig(id PushConfigID, update *PushConfigUpdate) (int64
 	if update.AppVersion != nil {
 		args.Append("app_version", *update.AppVersion)
 	}
+	if update.EnableRetryCount != nil {
+		args.Append("enable_retry_count", *update.EnableRetryCount)
+	}
 	if args.IsEmpty() {
 		return 0, nil
 	}
@@ -248,14 +253,14 @@ func (d *dal) DeletePushConfigForDeviceID(deviceID string) (int64, error) {
 }
 
 const selectPushConfig = `
-    SELECT push_config.id, push_config.external_group_id, push_config.platform, push_config.device_id, push_config.device_model, push_config.created, push_config.modified, push_config.device_token, push_config.push_endpoint, push_config.platform_version, push_config.app_version, push_config.device
+    SELECT push_config.id, push_config.external_group_id, push_config.platform, push_config.device_id, push_config.device_model, push_config.created, push_config.modified, push_config.device_token, push_config.push_endpoint, push_config.platform_version, push_config.app_version, push_config.device, push_config.enable_retry_count
       FROM push_config`
 
 func scanPushConfig(row dbutil.Scanner) (*PushConfig, error) {
 	var m PushConfig
 	m.ID = EmptyPushConfigID()
 
-	err := row.Scan(&m.ID, &m.ExternalGroupID, &m.Platform, &m.DeviceID, &m.DeviceModel, &m.Created, &m.Modified, &m.DeviceToken, &m.PushEndpoint, &m.PlatformVersion, &m.AppVersion, &m.Device)
+	err := row.Scan(&m.ID, &m.ExternalGroupID, &m.Platform, &m.DeviceID, &m.DeviceModel, &m.Created, &m.Modified, &m.DeviceToken, &m.PushEndpoint, &m.PlatformVersion, &m.AppVersion, &m.Device, &m.EnableRetryCount)
 	if err == sql.ErrNoRows {
 		return nil, errors.Trace(ErrNotFound)
 	}
