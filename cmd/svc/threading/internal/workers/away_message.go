@@ -68,7 +68,7 @@ func processAwayMessage(ctx context.Context, dl dal.DAL, directoryClient directo
 		threadClient,
 		thread.ID,
 		thread.OrganizationID,
-		models.TriggeredMessageKeyNewPatient,
+		models.TriggeredMessageKeyAwayMessage,
 		threading.AwayMessageSubkey(ent.Type, thType, channel),
 	))
 }

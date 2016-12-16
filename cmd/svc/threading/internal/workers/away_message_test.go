@@ -56,7 +56,7 @@ func TestAwayMessage(t *testing.T) {
 			},
 		}, nil)
 		st.dal.Expect(mock.NewExpectation(
-			st.dal.TriggeredMessageForKeys, "OrganizationID", models.TriggeredMessageKeyNewPatient, "PATIENT:THREAD_TYPE_SECURE_EXTERNAL", []interface{}{}).WithReturns(
+			st.dal.TriggeredMessageForKeys, "OrganizationID", models.TriggeredMessageKeyAwayMessage, "PATIENT:THREAD_TYPE_SECURE_EXTERNAL", []interface{}{}).WithReturns(
 			(*models.TriggeredMessage)(nil), dal.ErrNotFound))
 		testAwayMessage(t, st, &threading.PublishedThreadItem{
 			ThreadID: tID.String(),
