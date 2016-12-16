@@ -69,9 +69,17 @@ var visitLayoutsForPatientInitiatedVisitsQuery = &graphql.Field{
 		}
 
 		par := conc.NewParallel()
-		visitLayouts := make([][]*layout.VisitLayout, len(res.Categories))
-		for i, visitCategory := range res.Categories {
-			idx := i
+
+		visitLayouts := conc.NewMap()
+		for _, visitCategory := range res.Categories {
+
+			// ignore for now given that the names of the visits in this category
+			// are the same as all other visits, and we don't yet have a way to setup
+			// a separate menu for patient initiated visits.
+			if visitCategory.Name == "Quick Visits" {
+				continue
+			}
+
 			categoryID := visitCategory.ID
 			par.Go(func() error {
 				res, err := svc.layout.ListVisitLayouts(ctx, &layout.ListVisitLayoutsRequest{
@@ -80,8 +88,7 @@ var visitLayoutsForPatientInitiatedVisitsQuery = &graphql.Field{
 				if err != nil {
 					return errors.Trace(err)
 				}
-
-				visitLayouts[idx] = res.VisitLayouts
+				visitLayouts.Set(categoryID, res.VisitLayouts)
 				return nil
 			})
 		}
@@ -90,8 +97,9 @@ var visitLayoutsForPatientInitiatedVisitsQuery = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		allVisitLayouts := make([]*layout.VisitLayout, 0, len(res.Categories)*len(visitLayouts[0]))
-		for _, items := range visitLayouts {
+		allVisitLayouts := make([]*layout.VisitLayout, 0, len(res.Categories)*20)
+		for _, item := range visitLayouts.Snapshot() {
+			items := item.([]*layout.VisitLayout)
 			allVisitLayouts = append(allVisitLayouts, items...)
 		}
 		sort.Sort(byVisitLayoutName(allVisitLayouts))
