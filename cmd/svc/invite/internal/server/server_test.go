@@ -208,7 +208,7 @@ func TestInvitePatients(t *testing.T) {
 		},
 	}).WithReturns(&directory.LookupEntitiesResponse{
 		Entities: []*directory.Entity{
-			{ID: "org", Type: directory.EntityType_ORGANIZATION, Info: &directory.EntityInfo{DisplayName: "Batman Inc"}},
+			{ID: "org", Type: directory.EntityType_ORGANIZATION, Info: &directory.EntityInfo{DisplayName: "Batman Inc."}},
 		},
 	}, nil))
 
@@ -263,7 +263,7 @@ func TestInvitePatients(t *testing.T) {
 	// Generate branch URL
 	values := map[string]string{
 		"invite_token": "simpleToken",
-		"client_data":  `{"patient_invite":{"greeting":{"title":"Welcome to Spruce!","message":"Let's create your account so you can start securely messaging with Batman Inc","button_text":"Get Started"},"org_id":"org","org_name":"Batman Inc"}}`,
+		"client_data":  `{"patient_invite":{"greeting":{"title":"Welcome to Spruce!","message":"Let's create your account so you can start securely messaging with Batman Inc.","button_text":"Get Started"},"org_id":"org","org_name":"Batman Inc."}}`,
 		"$desktop_url": "https://app.sprucehealth.com/signup?invite=simpleToken&some=other",
 		"invite_type":  "PATIENT",
 	}
@@ -292,7 +292,7 @@ func TestInvitePatients(t *testing.T) {
 		DeprecatedChannel: excomms.ChannelType_EMAIL,
 		Message: &excomms.SendMessageRequest_Email{
 			Email: &excomms.EmailMessage{
-				Subject:          "Please join Batman Inc on Spruce",
+				Subject:          "Please join Batman Inc. on Spruce",
 				FromName:         "Spruce",
 				FromEmailAddress: "from@example.com",
 				Body:             fmt.Sprintf("Your invite link is %s [%s]", "https://example.com/invite", "simpleToken"),
@@ -300,7 +300,7 @@ func TestInvitePatients(t *testing.T) {
 				Transactional:    true,
 				TemplateID:       "patientInviteTemplateID",
 				TemplateSubstitutions: []*excomms.EmailMessage_Substitution{
-					{Key: "{orgname}", Value: "Batman Inc"},
+					{Key: "{orgname}", Value: "Batman Inc."},
 					{Key: "{inviteurl}", Value: "https://example.com/invite"},
 					{Key: "{invitecode}", Value: "simpleToken"},
 				},

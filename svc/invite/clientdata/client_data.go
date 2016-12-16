@@ -3,6 +3,7 @@ package clientdata
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -50,11 +51,15 @@ func PatientInviteClientJSON(org *directory.Entity, mediaAPIDomain, mimeType str
 	if inviteType == invite.LOOKUP_INVITE_RESPONSE_ORGANIZATION_CODE {
 		welcomeText = fmt.Sprintf("You're Joining %s", org.Info.DisplayName)
 	}
+
+	// handle common case of org name ending in period
+	orgName := strings.TrimRight(org.Info.DisplayName, ". ")
+
 	pcd := PatientInviteClientData{
 		PatientInvite: PatientInvite{
 			Greeting: Greeting{
 				Title:      welcomeText,
-				Message:    fmt.Sprintf("Let's create your account so you can start securely messaging with %s", org.Info.DisplayName),
+				Message:    fmt.Sprintf("Let's create your account so you can start securely messaging with %s.", orgName),
 				ButtonText: "Get Started",
 			},
 			OrgID:   org.ID,
