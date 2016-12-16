@@ -58,13 +58,11 @@ func processAwayMessage(ctx context.Context, dl dal.DAL, directoryClient directo
 	if err != nil {
 		return errors.Errorf("Unable to transform model thread type %s to response", thread.Type)
 	}
+	var destinations []*threading.Endpoint
 	var channel *threading.Endpoint_Channel
 	if ptiev.Item.GetMessage().Source != nil {
-		channel = &ptiev.Item.GetMessage().Source.Channel
-	}
-	var destinations []*threading.Endpoint
-	if ptiev.Item.GetMessage().Source != nil {
 		destinations = []*threading.Endpoint{ptiev.Item.GetMessage().Source}
+		channel = &ptiev.Item.GetMessage().Source.Channel
 	}
 	return errors.Trace(postMessagesForTriggeredMessage(
 		ctx,
