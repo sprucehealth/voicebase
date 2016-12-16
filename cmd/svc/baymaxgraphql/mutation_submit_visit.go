@@ -159,15 +159,47 @@ var submitVisitMutation = &graphql.Field{
 					return nil, errors.InternalError(ctx, err)
 				}
 
-				postMessageRes, err := ram.PostMessage(ctx, &threading.PostMessageRequest{
-					ThreadID:     thread.ID,
-					FromEntityID: visitRes.Visit.EntityID,
-					UUID:         uuid,
-					Message: &threading.MessagePost{
-						Summary: fmt.Sprintf("%s:%s", entity.Info.DisplayName, " Completed a visit"),
-						Title:   titleStr,
-					},
-				})
+				var pmr *threading.PostMessageRequest
+				if visitRes.Visit.PatientInitiated {
+					pmr = &threading.PostMessageRequest{
+						ThreadID:     thread.ID,
+						FromEntityID: visitRes.Visit.EntityID,
+						UUID:         uuid,
+						Message: &threading.MessagePost{
+							Summary: fmt.Sprintf("%s:%s", entity.Info.DisplayName, " Completed a visit"),
+							Title:   "Completed a visit:",
+							Attachments: []*threading.Attachment{
+								{
+									ContentID: visitRes.Visit.ID,
+									UserTitle: visitRes.Visit.Name,
+									Title:     visitRes.Visit.Name,
+									URL:       deeplink.VisitURL(svc.webDomain, thread.ID, visitRes.Visit.ID),
+									Data: &threading.Attachment_Visit{
+										Visit: &threading.VisitAttachment{
+											VisitID:   visitRes.Visit.ID,
+											VisitName: visitRes.Visit.Name,
+										},
+									},
+								},
+							},
+						},
+					}
+				} else {
+					pmr = &threading.PostMessageRequest{
+						ThreadID:     thread.ID,
+						FromEntityID: visitRes.Visit.EntityID,
+						UUID:         uuid,
+						Message: &threading.MessagePost{
+							Summary: fmt.Sprintf("%s:%s", entity.Info.DisplayName, " Completed a visit"),
+							Title:   titleStr,
+						},
+					}
+				}
+
+				postMessageRes, err := ram.PostMessage(ctx, pmr)
+				if err != nil {
+					return nil, errors.InternalError(ctx, err)
+				}
 
 				transformedThread, err := transformThreadToResponse(ctx, ram, postMessageRes.Thread, acc)
 				if err != nil {
