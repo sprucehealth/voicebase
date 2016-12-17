@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/device/devicectx"
+	"github.com/sprucehealth/backend/encoding"
 	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
@@ -376,25 +377,28 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 		// email required for backwards compatibility)
 		if patientInvite.InviteVerificationRequirement == invite.VERIFICATION_REQUIREMENT_EMAIL ||
 			patientInvite.InviteVerificationRequirement == invite.VERIFICATION_REQUIREMENT_UNKNOWN {
-			if in.EmailVerificationToken == "" {
+			// only require email verification for versions before 1.10. This is because we changed the patient verification flow
+			// in version 1.10 and beyond where there was no case where email verification was required, and in all cases
+			// the patient flow was exactly the same with phone verification being required.
+			if in.EmailVerificationToken == "" && sh.AppVersion.LessThan(&encoding.Version{Major: 1, Minor: 10}) {
 				return &createPatientAccountOutput{
 					ClientMutationID: in.ClientMutationID,
 					Success:          false,
 					ErrorCode:        createPatientAccountErrorCodeEmailVerificationTokenRequired,
 					ErrorMessage:     "Email verification token required.",
 				}, nil
-			}
-
-			if _, err := ram.VerifiedValue(ctx, in.EmailVerificationToken); err != nil {
-				if grpc.Code(err) == auth.ValueNotYetVerified {
-					return &createPatientAccountOutput{
-						ClientMutationID: in.ClientMutationID,
-						Success:          false,
-						ErrorCode:        createPatientAccountErrorCodeEmailNotVerified,
-						ErrorMessage:     "The email associated with this account creation has not been verified.",
-					}, nil
+			} else if in.EmailVerificationToken != "" {
+				if _, err := ram.VerifiedValue(ctx, in.EmailVerificationToken); err != nil {
+					if grpc.Code(err) == auth.ValueNotYetVerified {
+						return &createPatientAccountOutput{
+							ClientMutationID: in.ClientMutationID,
+							Success:          false,
+							ErrorCode:        createPatientAccountErrorCodeEmailNotVerified,
+							ErrorMessage:     "The email associated with this account creation has not been verified.",
+						}, nil
+					}
+					return nil, errors.InternalError(ctx, fmt.Errorf("Encountered error while checking if email has been verified: %s", err))
 				}
-				return nil, errors.InternalError(ctx, fmt.Errorf("Encountered error while checking if email has been verified: %s", err))
 			}
 		}
 
