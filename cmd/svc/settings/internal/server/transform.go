@@ -343,7 +343,7 @@ func transformModelToValue(value *models.Value, currentConfig *models.Config) *s
 		}
 		if w := value.GetText(); w != nil {
 			v.GetText().Value = w.Value
-			if currentConfig.GetText() != nil && currentConfig.GetText().GetRequirements() != nil {
+			if currentConfig.GetText().Requirements != nil {
 				switch currentConfig.GetText().GetRequirements().TextType {
 				case models.TextType_PHONE:
 					pn, err := phone.Format(value.GetText().Value, phone.Pretty)
@@ -366,7 +366,7 @@ func transformModelToValue(value *models.Value, currentConfig *models.Config) *s
 				v.GetStringList().DisplayValues[i] = value
 			}
 
-			if currentConfig.GetStringList() != nil && currentConfig.GetStringList().GetRequirements() != nil {
+			if currentConfig.GetStringList().Requirements != nil {
 				switch currentConfig.GetStringList().GetRequirements().TextRequirements.TextType {
 				case models.TextType_PHONE:
 					for i, value := range v.GetStringList().Values {
