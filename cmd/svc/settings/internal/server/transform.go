@@ -343,15 +343,16 @@ func transformModelToValue(value *models.Value, currentConfig *models.Config) *s
 		}
 		if w := value.GetText(); w != nil {
 			v.GetText().Value = w.Value
-			switch currentConfig.GetText().GetRequirements().TextType {
-			case models.TextType_PHONE:
-				pn, err := phone.Format(value.GetText().Value, phone.Pretty)
-				if err != nil {
-					golog.Errorf("Unable to parse phone number %s : %s", v.GetText().Value, err)
+			if currentConfig.GetText() != nil && currentConfig.GetText().GetRequirements() != nil {
+				switch currentConfig.GetText().GetRequirements().TextType {
+				case models.TextType_PHONE:
+					pn, err := phone.Format(value.GetText().Value, phone.Pretty)
+					if err != nil {
+						golog.Errorf("Unable to parse phone number %s : %s", v.GetText().Value, err)
+					}
+					v.GetText().DisplayValue = pn
 				}
-				v.GetText().DisplayValue = pn
 			}
-
 		}
 
 	case models.ConfigType_STRING_LIST:
@@ -365,14 +366,16 @@ func transformModelToValue(value *models.Value, currentConfig *models.Config) *s
 				v.GetStringList().DisplayValues[i] = value
 			}
 
-			switch currentConfig.GetStringList().GetRequirements().TextRequirements.TextType {
-			case models.TextType_PHONE:
-				for i, value := range v.GetStringList().Values {
-					pn, err := phone.Format(value, phone.Pretty)
-					if err != nil {
-						golog.Errorf("Unable to parse phone number %s : %s", value, err)
+			if currentConfig.GetStringList() != nil && currentConfig.GetStringList().GetRequirements() != nil {
+				switch currentConfig.GetStringList().GetRequirements().TextRequirements.TextType {
+				case models.TextType_PHONE:
+					for i, value := range v.GetStringList().Values {
+						pn, err := phone.Format(value, phone.Pretty)
+						if err != nil {
+							golog.Errorf("Unable to parse phone number %s : %s", value, err)
+						}
+						v.GetStringList().DisplayValues[i] = pn
 					}
-					v.GetStringList().DisplayValues[i] = pn
 				}
 			}
 		}
