@@ -27,7 +27,7 @@ func isMessageSpam(pem *excomms.PublishedExternalMessage) bool {
 	if pem.Type == excomms.PublishedExternalMessage_SMS && pem.Direction == excomms.PublishedExternalMessage_INBOUND {
 		text := pem.GetSMSItem().Text
 		for _, phrase := range spamTextPhrases {
-			if strings.Contains(text, phrase) {
+			if strings.Contains(strings.ToLower(text), strings.ToLower(phrase)) {
 				return true
 			}
 		}
