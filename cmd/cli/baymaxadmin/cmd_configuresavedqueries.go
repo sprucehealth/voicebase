@@ -113,7 +113,9 @@ func (c *configureSavedQueriesCmd) run(args []string) error {
 			return errors.Trace(err)
 		}
 		for _, sq := range savedQueriesRes.SavedQueries {
-			savedQueryIDs = append(savedQueryIDs, sq.ID)
+			if !sq.DefaultTemplate {
+				savedQueryIDs = append(savedQueryIDs, sq.ID)
+			}
 		}
 		savedQueries = savedQueriesRes.SavedQueries
 	} else {
