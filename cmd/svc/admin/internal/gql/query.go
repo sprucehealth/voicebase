@@ -13,6 +13,7 @@ func NewQueryRoot() *graphql.Object {
 				"contact":          contactField,
 				"me":               meField,
 				"practiceLink":     practiceLinkField,
+				"search":           searchField,
 				"triggeredMessage": triggeredMessageField,
 			},
 		})

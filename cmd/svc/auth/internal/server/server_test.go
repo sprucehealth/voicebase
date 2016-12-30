@@ -60,7 +60,7 @@ func TestGetAccount(t *testing.T) {
 		LastName:  ln,
 		Status:    dal.AccountStatusDeleted,
 	}, nil))
-	resp, err := s.GetAccount(context.Background(), &auth.GetAccountRequest{AccountID: aID1.String()})
+	resp, err := s.GetAccount(context.Background(), &auth.GetAccountRequest{Key: &auth.GetAccountRequest_ID{ID: aID1.String()}})
 	test.OK(t, err)
 
 	test.AssertNotNil(t, resp.Account)
@@ -81,7 +81,7 @@ func TestGetAccountNotFound(t *testing.T) {
 	aID1, err := dal.NewAccountID()
 	test.OK(t, err)
 	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.Account, aID1), (*dal.Account)(nil), dal.ErrNotFound))
-	_, err = s.GetAccount(context.Background(), &auth.GetAccountRequest{AccountID: aID1.String()})
+	_, err = s.GetAccount(context.Background(), &auth.GetAccountRequest{Key: &auth.GetAccountRequest_ID{ID: aID1.String()}})
 	test.Assert(t, err != nil, "Expected an error")
 	test.Equals(t, codes.NotFound, grpc.Code(err))
 }

@@ -1,0 +1,1 @@
+CREATE INDEX idx_display_name ON entity (display_name);

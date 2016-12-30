@@ -242,7 +242,9 @@ func (m *resourceAccessor) Account(ctx context.Context, accountID string) (*auth
 		return nil, err
 	}
 	resp, err := m.auth.GetAccount(ctx, &auth.GetAccountRequest{
-		AccountID: accountID,
+		Key: &auth.GetAccountRequest_ID{
+			ID: accountID,
+		},
 	})
 	if err != nil {
 		if grpc.Code(err) == codes.NotFound {

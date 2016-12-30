@@ -123,6 +123,8 @@ func (s *server) LookupEntities(ctx context.Context, in *directory.LookupEntitie
 			}
 			entityIDs[i] = eid
 		}
+	case *directory.LookupEntitiesRequest_DisplayName:
+		golog.Debugf("Searching by DisplayName %s - Not collecting IDs", key.DisplayName)
 	default:
 		return nil, errors.Errorf("Unknown lookup key type %T", in.Key)
 	}
@@ -141,10 +143,28 @@ func (s *server) LookupEntities(ctx context.Context, in *directory.LookupEntitie
 		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	entities, err := s.dl.Entities(entityIDs, statuses, rootTypes)
-	if err != nil {
-		return nil, errors.Trace(err)
+	var entities []*dal.Entity
+	switch key := in.Key.(type) {
+	case *directory.LookupEntitiesRequest_DisplayName:
+		entities, err = s.dl.SearchEntities(&dal.EntitySearch{
+			DisplayName: key.DisplayName,
+			Statuses:    statuses,
+			Types:       rootTypes,
+		})
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		// For search by name don't return an error when nothing is found
+		if len(entities) == 0 {
+			return &directory.LookupEntitiesResponse{}, nil
+		}
+	default:
+		entities, err = s.dl.Entities(entityIDs, statuses, rootTypes)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 	}
+
 	if len(entities) == 0 {
 		return nil, grpc.Errorf(codes.NotFound, "No entities located matching query")
 	}

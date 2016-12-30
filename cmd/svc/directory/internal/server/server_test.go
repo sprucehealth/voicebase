@@ -57,6 +57,45 @@ func TestLookupEntitiesByEntityID(t *testing.T) {
 	test.Equals(t, eSrc, resp.Entities[0].Source)
 }
 
+func TestLookupEntitiesByDisplayName(t *testing.T) {
+	t.Parallel()
+	dl := mock_dal.NewMockDAL(t)
+	defer dl.Finish()
+
+	ctrl := gomock.NewController(t)
+	publisher := eventsmock.NewMockPublisher(ctrl)
+	defer ctrl.Finish()
+
+	s := New(dl, publisher, metrics.NewRegistry())
+	eID1, err := dal.NewEntityID()
+	test.OK(t, err)
+	eSrc := &directory.EntitySource{Type: directory.EntitySource_PRACTICE_CODE, Data: "123456"}
+	dl.Expect(mock.WithReturns(mock.NewExpectation(dl.SearchEntities, &dal.EntitySearch{
+		DisplayName: "DisplayName",
+		Statuses:    ([]dal.EntityStatus)(nil),
+		Types:       []dal.EntityType{},
+	}), []*dal.Entity{
+		{
+			ID:          eID1,
+			DisplayName: "entity1",
+			Type:        dal.EntityTypeExternal,
+			Status:      dal.EntityStatusActive,
+			Source:      directory.FlattenEntitySource(eSrc),
+		},
+	}, nil))
+	resp, err := s.LookupEntities(context.Background(), &directory.LookupEntitiesRequest{
+		Key:                  &directory.LookupEntitiesRequest_DisplayName{DisplayName: "DisplayName"},
+		RequestedInformation: &directory.RequestedInformation{},
+	})
+	test.OK(t, err)
+
+	test.Equals(t, 1, len(resp.Entities))
+	test.Equals(t, eID1.String(), resp.Entities[0].ID)
+	test.Equals(t, "entity1", resp.Entities[0].Info.DisplayName)
+	test.Equals(t, directory.EntityType_EXTERNAL, resp.Entities[0].Type)
+	test.Equals(t, eSrc, resp.Entities[0].Source)
+}
+
 func TestLookupEntitiesByEntityIDNonZeroDepth(t *testing.T) {
 	t.Parallel()
 	dl := mock_dal.NewMockDAL(t)

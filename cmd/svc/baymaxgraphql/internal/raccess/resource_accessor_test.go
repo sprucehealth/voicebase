@@ -74,7 +74,9 @@ func TestAccessAccount(t *testing.T) {
 	defer rat.finish()
 
 	rat.aC.Expect(mock.NewExpectation(rat.aC.GetAccount, &auth.GetAccountRequest{
-		AccountID: accountID,
+		Key: &auth.GetAccountRequest_ID{
+			ID: accountID,
+		},
 	}).WithReturns(&auth.GetAccountResponse{Account: &auth.Account{ID: accountID}}, nil))
 
 	rAcc, err := rat.ra.Account(ctx, accountID)

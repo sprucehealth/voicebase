@@ -52,6 +52,7 @@ func (c *accountCmd) run(args []string) error {
 
 	scn := bufio.NewScanner(os.Stdin)
 
+	req := &auth.GetAccountRequest{}
 	if *accountID == "" {
 		*accountID = prompt(scn, "Account ID: ")
 	}
@@ -62,16 +63,20 @@ func (c *accountCmd) run(args []string) error {
 		if *email == "" {
 			return errors.New("Account ID or email is required")
 		}
+		req.Key = &auth.GetAccountRequest_Email{
+			Email: *email,
+		}
+	} else {
+		req.Key = &auth.GetAccountRequest_ID{
+			ID: *accountID,
+		}
 	}
 
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
-	res, err := c.authCli.GetAccount(ctx, &auth.GetAccountRequest{
-		AccountID:    *accountID,
-		AccountEmail: *email,
-	})
+	res, err := c.authCli.GetAccount(ctx, req)
 	if grpc.Code(err) == codes.NotFound {
 		return errors.New("Account not found")
 	} else if err != nil {

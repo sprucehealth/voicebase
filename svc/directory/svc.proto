@@ -143,6 +143,7 @@ message LookupEntitiesRequest {
 		// Can't use repeated inside oneof
 		IDList batch_entity_id = 6 [(gogoproto.customname) = "BatchEntityID"];
 		string account_id = 9 [(gogoproto.customname) = "AccountID"];
+		string display_name = 11;
 	}
 
 	RequestedInformation requested_information = 4;

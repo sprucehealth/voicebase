@@ -11,46 +11,6 @@ import (
 	"github.com/sprucehealth/graphql"
 )
 
-// entityArgumentsConfig represents the config for arguments referencing an entity
-var entityArgumentsConfig = graphql.FieldConfigArgument{
-	"id": &graphql.ArgumentConfig{Type: graphql.String},
-}
-
-// entityArguments represents arguments for referencing an entity
-type entityArguments struct {
-	ID string `json:"id"`
-}
-
-// parseEntityArguments parses the entity arguments out of requests params
-func parseEntityArguments(args map[string]interface{}) *entityArguments {
-	entArgs := &entityArguments{}
-	if args != nil {
-		if iid, ok := args["id"]; ok {
-			if id, ok := iid.(string); ok {
-				entArgs.ID = id
-			}
-		}
-	}
-	return entArgs
-}
-
-// entityField returns is a graphql field for Querying an Entity object
-var entityField = &graphql.Field{
-	Type:    entityType,
-	Args:    entityArgumentsConfig,
-	Resolve: entityResolve,
-}
-
-func entityResolve(p graphql.ResolveParams) (interface{}, error) {
-	ctx := p.Context
-	args := parseEntityArguments(p.Args)
-	golog.ContextLogger(ctx).Debugf("Resolving Entity with args %+v", args)
-	if args.ID == "" {
-		return nil, nil
-	}
-	return getEntity(ctx, client.Directory(p), args.ID)
-}
-
 // special case the way we handle entity types since they are recursive
 var entityType = &graphql.Object{}
 
@@ -90,6 +50,46 @@ func init() {
 			},
 		},
 	)
+}
+
+// entityArgumentsConfig represents the config for arguments referencing an entity
+var entityArgumentsConfig = graphql.FieldConfigArgument{
+	"id": &graphql.ArgumentConfig{Type: graphql.String},
+}
+
+// entityArguments represents arguments for referencing an entity
+type entityArguments struct {
+	ID string `json:"id"`
+}
+
+// parseEntityArguments parses the entity arguments out of requests params
+func parseEntityArguments(args map[string]interface{}) *entityArguments {
+	entArgs := &entityArguments{}
+	if args != nil {
+		if iid, ok := args["id"]; ok {
+			if id, ok := iid.(string); ok {
+				entArgs.ID = id
+			}
+		}
+	}
+	return entArgs
+}
+
+// entityField returns is a graphql field for Querying an Entity object
+var entityField = &graphql.Field{
+	Type:    entityType,
+	Args:    entityArgumentsConfig,
+	Resolve: entityResolve,
+}
+
+func entityResolve(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	args := parseEntityArguments(p.Args)
+	golog.ContextLogger(ctx).Debugf("Resolving Entity with args %+v", args)
+	if args.ID == "" {
+		return nil, nil
+	}
+	return getEntity(ctx, client.Directory(p), args.ID)
 }
 
 func entitySettingsResolve(p graphql.ResolveParams) (interface{}, error) {

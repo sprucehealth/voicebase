@@ -49,6 +49,7 @@ type DAL interface {
 	InsertEntity(model *Entity) (EntityID, error)
 	Entity(id EntityID) (*Entity, error)
 	Entities(ids []EntityID, statuses []EntityStatus, types []EntityType) ([]*Entity, error)
+	SearchEntities(entitySearch *EntitySearch, opts ...QueryOption) ([]*Entity, error)
 	UpdateEntity(id EntityID, update *EntityUpdate) (int64, error)
 	DeleteEntity(id EntityID) (int64, error)
 	UpsertSerializedClientEntityContact(model *SerializedClientEntityContact) error
@@ -829,6 +830,43 @@ func (d *dal) Entities(ids []EntityID, statuses []EntityStatus, types []EntityTy
 	}
 	rows, err := d.db.Query(
 		selectEntity+` WHERE id IN (`+dbutil.MySQLArgs(len(ids))+`) `+andEntityStatusIn(statuses)+` `+andEntityTypeIn(types), vals...)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer rows.Close()
+
+	var entities []*Entity
+	for rows.Next() {
+		entity, err := scanEntity(rows)
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+		entities = append(entities, entity)
+	}
+	return entities, errors.Trace(rows.Err())
+}
+
+// EntitySearch encapsulates the searchable attributes of the entity space
+type EntitySearch struct {
+	DisplayName string
+	Statuses    []EntityStatus
+	Types       []EntityType
+}
+
+// SearchEntities returns the entity record associated with the provided IDs
+// Uses a search struct for other search types than displayname in the future?
+func (d *dal) SearchEntities(entitySearch *EntitySearch, opts ...QueryOption) ([]*Entity, error) {
+	if entitySearch.DisplayName == "" {
+		return nil, errors.Errorf("DisplayName required")
+	}
+
+	// TODO: Escape additional '%' character
+	// TODO: Until we figure out pagination, limit to 100 results
+	rows, err := d.db.Query(
+		selectEntity+` WHERE display_name LIKE ?`+
+			` `+andEntityStatusIn(entitySearch.Statuses)+
+			` `+andEntityTypeIn(entitySearch.Types)+
+			` LIMIT 100`, "%"+entitySearch.DisplayName+"%")
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

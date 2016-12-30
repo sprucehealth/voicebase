@@ -85,7 +85,9 @@ func accountResolve(p graphql.ResolveParams) (interface{}, error) {
 
 func getAccountByID(ctx context.Context, authClient auth.AuthClient, accountID string) (*models.Account, error) {
 	resp, err := authClient.GetAccount(ctx, &auth.GetAccountRequest{
-		AccountID: accountID,
+		Key: &auth.GetAccountRequest_ID{
+			ID: accountID,
+		},
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -99,7 +101,9 @@ func getAccountByID(ctx context.Context, authClient auth.AuthClient, accountID s
 
 func getAccountByEmail(ctx context.Context, authClient auth.AuthClient, email string) (*models.Account, error) {
 	resp, err := authClient.GetAccount(ctx, &auth.GetAccountRequest{
-		AccountEmail: email,
+		Key: &auth.GetAccountRequest_Email{
+			Email: email,
+		},
 	})
 	if err != nil {
 		return nil, errors.Trace(err)

@@ -601,13 +601,39 @@ func (s *server) CreatePasswordResetToken(ctx context.Context, rd *auth.CreatePa
 }
 
 func (s *server) GetAccount(ctx context.Context, rd *auth.GetAccountRequest) (*auth.GetAccountResponse, error) {
-	id, err := dal.ParseAccountID(rd.AccountID)
-	if err != nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, "Unable to parse provided account ID")
+	// TODO: Remove after next full deployment
+	if rd.AccountID != "" {
+		id, err := dal.ParseAccountID(rd.AccountID)
+		if err != nil {
+			return nil, grpc.Errorf(codes.InvalidArgument, "Unable to parse provided account ID")
+		}
+		account, err := s.dal.Account(ctx, id)
+		if errors.Cause(err) == dal.ErrNotFound {
+			return nil, grpc.Errorf(codes.NotFound, "Account with ID %s not found", rd.AccountID)
+		}
+		return &auth.GetAccountResponse{
+			Account: accountAsResponse(account),
+		}, nil
 	}
-	account, err := s.dal.Account(ctx, id)
-	if errors.Cause(err) == dal.ErrNotFound {
-		return nil, grpc.Errorf(codes.NotFound, "Account with ID %s not found", rd.AccountID)
+	var account *dal.Account
+	var err error
+	switch key := rd.Key.(type) {
+	case *auth.GetAccountRequest_ID:
+		id, err := dal.ParseAccountID(key.ID)
+		if err != nil {
+			return nil, grpc.Errorf(codes.InvalidArgument, "Unable to parse provided account ID")
+		}
+		account, err = s.dal.Account(ctx, id)
+		if errors.Cause(err) == dal.ErrNotFound {
+			return nil, grpc.Errorf(codes.NotFound, "Account with ID %s not found", key.ID)
+		}
+	case *auth.GetAccountRequest_Email:
+		account, err = s.dal.AccountForEmail(ctx, key.Email)
+		if errors.Cause(err) == dal.ErrNotFound {
+			return nil, grpc.Errorf(codes.NotFound, "Account with ID %s not found", key.Email)
+		}
+	default:
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unknown lookup key %+v", rd.Key)
 	}
 	return &auth.GetAccountResponse{
 		Account: accountAsResponse(account),

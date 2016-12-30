@@ -338,6 +338,15 @@ func (dl *MockDAL) ExternalLinksForEntity(entityID dal.EntityID) ([]*dal.Externa
 	return rets[0].([]*dal.ExternalLink), mock.SafeError(rets[1])
 }
 
+func (dl *MockDAL) SearchEntities(entitySearch *dal.EntitySearch, opts ...dal.QueryOption) ([]*dal.Entity, error) {
+	rets := dl.Record(entitySearch)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].([]*dal.Entity), mock.SafeError(rets[1])
+}
+
 func optsToInterfaces(opts []dal.QueryOption) []interface{} {
 	ifs := make([]interface{}, len(opts))
 	for i, o := range opts {
