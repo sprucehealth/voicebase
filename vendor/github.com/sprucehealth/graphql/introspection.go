@@ -3,6 +3,7 @@ package graphql
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/sprucehealth/graphql/language/ast"
 	"github.com/sprucehealth/graphql/language/printer"
@@ -233,7 +234,7 @@ mutation operations.`,
 				)),
 				Resolve: func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
-						results := []Type{}
+						var results []Type
 						for _, ttype := range schema.TypeMap() {
 							results = append(results, ttype)
 						}
@@ -329,7 +330,7 @@ mutation operations.`,
 				if ttype == nil {
 					return nil, nil
 				}
-				fields := []*FieldDefinition{}
+				var fields []*FieldDefinition
 				for _, field := range ttype.Fields() {
 					if !includeDeprecated && field.DeprecationReason != "" {
 						continue
@@ -341,7 +342,7 @@ mutation operations.`,
 				if ttype == nil {
 					return nil, nil
 				}
-				fields := []*FieldDefinition{}
+				var fields []*FieldDefinition
 				for _, field := range ttype.Fields() {
 					if !includeDeprecated && field.DeprecationReason != "" {
 						continue
@@ -465,23 +466,19 @@ mutation operations.`,
 
 }
 
-/**
- * Produces a GraphQL Value AST given a Golang value.
- *
- * Optionally, a GraphQL type may be provided, which will be used to
- * disambiguate between value primitives.
- *
- * | JSON Value    | GraphQL Value        |
- * | ------------- | -------------------- |
- * | Object        | Input Object         |
- * | Array         | List                 |
- * | Boolean       | Boolean              |
- * | String        | String / Enum Value  |
- * | Number        | Int / Float          |
- *
- */
+// Produces a GraphQL Value AST given a Golang value.
+//
+// Optionally, a GraphQL type may be provided, which will be used to
+// disambiguate between value primitives.
+//
+// | JSON Value    | GraphQL Value        |
+// | ------------- | -------------------- |
+// | Object        | Input Object         |
+// | Array         | List                 |
+// | Boolean       | Boolean              |
+// | String        | String / Enum Value  |
+// | Number        | Int / Float          |
 func astFromValue(value interface{}, ttype Type) ast.Value {
-
 	if ttype, ok := ttype.(*NonNull); ok {
 		// Note: we're not checking that the result is non-null.
 		// This function is not responsible for validating the input value.
@@ -507,7 +504,7 @@ func astFromValue(value interface{}, ttype Type) ast.Value {
 	if ttype, ok := ttype.(*List); ok {
 		if valueVal.Type().Kind() == reflect.Slice {
 			itemType := ttype.OfType
-			values := []ast.Value{}
+			var values []ast.Value
 			for i := 0; i < valueVal.Len(); i++ {
 				item := valueVal.Index(i).Interface()
 				itemAST := astFromValue(item, itemType)
@@ -515,9 +512,9 @@ func astFromValue(value interface{}, ttype Type) ast.Value {
 					values = append(values, itemAST)
 				}
 			}
-			return ast.NewListValue(&ast.ListValue{
+			return &ast.ListValue{
 				Values: values,
-			})
+			}
 		}
 		// Because GraphQL will accept single values as a "list of one" when
 		// expecting a list, if there's a non-array value and an expected list type,
@@ -531,44 +528,44 @@ func astFromValue(value interface{}, ttype Type) ast.Value {
 	}
 
 	if value, ok := value.(bool); ok {
-		return ast.NewBooleanValue(&ast.BooleanValue{
+		return &ast.BooleanValue{
 			Value: value,
-		})
+		}
 	}
 	if value, ok := value.(int); ok {
 		if ttype == Float {
-			return ast.NewIntValue(&ast.IntValue{
-				Value: fmt.Sprintf("%v.0", value),
-			})
+			return &ast.IntValue{
+				Value: strconv.Itoa(value) + ".0",
+			}
 		}
-		return ast.NewIntValue(&ast.IntValue{
-			Value: fmt.Sprintf("%v", value),
-		})
+		return &ast.IntValue{
+			Value: strconv.Itoa(value),
+		}
 	}
 	if value, ok := value.(float32); ok {
-		return ast.NewFloatValue(&ast.FloatValue{
-			Value: fmt.Sprintf("%v", value),
-		})
+		return &ast.FloatValue{
+			Value: strconv.FormatFloat(float64(value), 'f', -1, 32),
+		}
 	}
 	if value, ok := value.(float64); ok {
-		return ast.NewFloatValue(&ast.FloatValue{
-			Value: fmt.Sprintf("%v", value),
-		})
+		return &ast.FloatValue{
+			Value: strconv.FormatFloat(value, 'f', -1, 64),
+		}
 	}
 
 	if value, ok := value.(string); ok {
 		if _, ok := ttype.(*Enum); ok {
-			return ast.NewEnumValue(&ast.EnumValue{
-				Value: fmt.Sprintf("%v", value),
-			})
+			return &ast.EnumValue{
+				Value: value,
+			}
 		}
-		return ast.NewStringValue(&ast.StringValue{
-			Value: fmt.Sprintf("%v", value),
-		})
+		return &ast.StringValue{
+			Value: value,
+		}
 	}
 
 	// fallback, treat as string
-	return ast.NewStringValue(&ast.StringValue{
+	return &ast.StringValue{
 		Value: fmt.Sprintf("%v", value),
-	})
+	}
 }

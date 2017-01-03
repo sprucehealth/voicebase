@@ -24,9 +24,9 @@ func NewLocatedError(err interface{}, nodes []ast.Node) *gqlerrors.Error {
 }
 
 func FieldASTsToNodeASTs(fieldASTs []*ast.Field) []ast.Node {
-	nodes := []ast.Node{}
-	for _, fieldAST := range fieldASTs {
-		nodes = append(nodes, fieldAST)
+	nodes := make([]ast.Node, len(fieldASTs))
+	for i, fieldAST := range fieldASTs {
+		nodes[i] = fieldAST
 	}
 	return nodes
 }

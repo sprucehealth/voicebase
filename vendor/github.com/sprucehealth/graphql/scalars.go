@@ -11,7 +11,7 @@ import (
 func coerceInt(value interface{}) interface{} {
 	switch value := value.(type) {
 	case bool:
-		if value == true {
+		if value {
 			return 1
 		}
 		return 0
@@ -86,7 +86,7 @@ var Int *Scalar = NewScalar(ScalarConfig{
 func coerceFloat32(value interface{}) interface{} {
 	switch value := value.(type) {
 	case bool:
-		if value == true {
+		if value {
 			return float32(1)
 		}
 		return float32(0)

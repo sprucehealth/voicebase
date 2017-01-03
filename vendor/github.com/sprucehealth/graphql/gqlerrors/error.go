@@ -29,7 +29,7 @@ func NewError(message string, nodes []ast.Node, stack string, source *source.Sou
 	if source == nil {
 		for _, node := range nodes {
 			// get source from first node
-			if node.GetLoc() != nil {
+			if node.GetLoc().Source != nil {
 				source = node.GetLoc().Source
 			}
 			break
@@ -37,9 +37,6 @@ func NewError(message string, nodes []ast.Node, stack string, source *source.Sou
 	}
 	if len(positions) == 0 && len(nodes) > 0 {
 		for _, node := range nodes {
-			if node.GetLoc() == nil {
-				continue
-			}
 			positions = append(positions, node.GetLoc().Start)
 		}
 	}

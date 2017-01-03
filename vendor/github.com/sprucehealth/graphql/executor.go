@@ -7,9 +7,10 @@ import (
 	"strings"
 	"sync"
 
+	"context"
+
 	"github.com/sprucehealth/graphql/gqlerrors"
 	"github.com/sprucehealth/graphql/language/ast"
-	"context"
 )
 
 type ExecuteParams struct {
@@ -78,6 +79,10 @@ type ExecutionContext struct {
 	Context        context.Context
 }
 
+func safeNodeType(n ast.Node) string {
+	return strings.TrimPrefix(reflect.TypeOf(n).String(), "*ast.")
+}
+
 func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error) {
 	operations := make(map[string]ast.Definition)
 	fragments := make(map[string]ast.Definition)
@@ -96,7 +101,7 @@ func buildExecutionContext(p BuildExecutionCtxParams) (*ExecutionContext, error)
 			}
 			fragments[key] = stm
 		default:
-			return nil, fmt.Errorf("GraphQL cannot execute a request containing a %v", statement.GetKind())
+			return nil, fmt.Errorf("GraphQL cannot execute a request containing a %s", safeNodeType(statement))
 		}
 	}
 

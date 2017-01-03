@@ -27,52 +27,33 @@ const (
 	INT
 	FLOAT
 	STRING
+	COMMENT
 )
 
-var TokenKind map[int]int
 var tokenDescription map[int]string
 
 func init() {
-	TokenKind = make(map[int]int)
 	tokenDescription = make(map[int]string)
-	TokenKind[EOF] = EOF
-	TokenKind[BANG] = BANG
-	TokenKind[DOLLAR] = DOLLAR
-	TokenKind[PAREN_L] = PAREN_L
-	TokenKind[PAREN_R] = PAREN_R
-	TokenKind[SPREAD] = SPREAD
-	TokenKind[COLON] = COLON
-	TokenKind[EQUALS] = EQUALS
-	TokenKind[AT] = AT
-	TokenKind[BRACKET_L] = BRACKET_L
-	TokenKind[BRACKET_R] = BRACKET_R
-	TokenKind[BRACE_L] = BRACE_L
-	TokenKind[PIPE] = PIPE
-	TokenKind[BRACE_R] = BRACE_R
-	TokenKind[NAME] = NAME
-	TokenKind[VARIABLE] = VARIABLE
-	TokenKind[INT] = INT
-	TokenKind[FLOAT] = FLOAT
-	TokenKind[STRING] = STRING
-	tokenDescription[TokenKind[EOF]] = "EOF"
-	tokenDescription[TokenKind[BANG]] = "!"
-	tokenDescription[TokenKind[DOLLAR]] = "$"
-	tokenDescription[TokenKind[PAREN_L]] = "("
-	tokenDescription[TokenKind[PAREN_R]] = ")"
-	tokenDescription[TokenKind[SPREAD]] = "..."
-	tokenDescription[TokenKind[COLON]] = ":"
-	tokenDescription[TokenKind[EQUALS]] = "="
-	tokenDescription[TokenKind[AT]] = "@"
-	tokenDescription[TokenKind[BRACKET_L]] = "["
-	tokenDescription[TokenKind[BRACKET_R]] = "]"
-	tokenDescription[TokenKind[BRACE_L]] = "{"
-	tokenDescription[TokenKind[PIPE]] = "|"
-	tokenDescription[TokenKind[BRACE_R]] = "}"
-	tokenDescription[TokenKind[NAME]] = "Name"
-	tokenDescription[TokenKind[VARIABLE]] = "Variable"
-	tokenDescription[TokenKind[INT]] = "Int"
-	tokenDescription[TokenKind[FLOAT]] = "Float"
-	tokenDescription[TokenKind[STRING]] = "String"
+	tokenDescription[EOF] = "EOF"
+	tokenDescription[BANG] = "!"
+	tokenDescription[DOLLAR] = "$"
+	tokenDescription[PAREN_L] = "("
+	tokenDescription[PAREN_R] = ")"
+	tokenDescription[SPREAD] = "..."
+	tokenDescription[COLON] = ":"
+	tokenDescription[EQUALS] = "="
+	tokenDescription[AT] = "@"
+	tokenDescription[BRACKET_L] = "["
+	tokenDescription[BRACKET_R] = "]"
+	tokenDescription[BRACE_L] = "{"
+	tokenDescription[PIPE] = "|"
+	tokenDescription[BRACE_R] = "}"
+	tokenDescription[NAME] = "Name"
+	tokenDescription[VARIABLE] = "Variable"
+	tokenDescription[INT] = "Int"
+	tokenDescription[FLOAT] = "Float"
+	tokenDescription[STRING] = "String"
+	tokenDescription[COMMENT] = "Comment"
 }
 
 type Token struct {
@@ -83,24 +64,29 @@ type Token struct {
 }
 
 func (t *Token) String() string {
-	return fmt.Sprintf("%s", tokenDescription[t.Kind])
+	return tokenDescription[t.Kind]
 }
 
-type Lexer func(resetPosition int) (Token, error)
+type Lexer struct {
+	s   *source.Source
+	pos int
+}
 
-func Lex(s *source.Source) Lexer {
-	var prevPosition int
-	return func(resetPosition int) (Token, error) {
-		if resetPosition == 0 {
-			resetPosition = prevPosition
-		}
-		token, err := readToken(s, resetPosition)
-		if err != nil {
-			return token, err
-		}
-		prevPosition = token.End
-		return token, nil
+func New(s *source.Source) *Lexer {
+	return &Lexer{s: s}
+}
+
+func (l *Lexer) Seek(pos int) {
+	l.pos = pos
+}
+
+func (l *Lexer) NextToken() (Token, error) {
+	token, err := readToken(l.s, l.pos)
+	if err != nil {
+		return token, err
 	}
+	l.pos = token.End
+	return token, err
 }
 
 // Reads an alphanumeric + underscore name from the source.
@@ -117,7 +103,7 @@ func readName(s *source.Source, position int) Token {
 		}
 		end++
 	}
-	return makeToken(TokenKind[NAME], position, end, s.Body()[position:end])
+	return makeToken(NAME, position, end, s.Body()[position:end])
 }
 
 // Reads a number token from the source file, either a float
@@ -172,9 +158,9 @@ func readNumber(s *source.Source, start int, firstCode rune) (Token, error) {
 		}
 		position = p
 	}
-	kind := TokenKind[INT]
+	kind := INT
 	if isFloat {
-		kind = TokenKind[FLOAT]
+		kind = FLOAT
 	}
 	return makeToken(kind, start, position, s.Body()[start:position]), nil
 }
@@ -208,7 +194,7 @@ func readString(s *source.Source, start int) (Token, error) {
 	var value string
 	for {
 		code = s.RuneAt(position)
-		if !(position < len(body) && code != 34 && code != 10 && code != 13 && code != 0x2028 && code != 0x2029) {
+		if !(position < len(body) && code != '"' && code != 10 && code != 13 && code != 0x2028 && code != 0x2029) {
 			break
 		}
 		position++
@@ -251,11 +237,11 @@ func readString(s *source.Source, start int) (Token, error) {
 			chunkStart = position
 		}
 	}
-	if code != 34 {
+	if code != '"' {
 		return Token{}, gqlerrors.NewSyntaxError(s, position, "Unterminated string.")
 	}
 	value += body[chunkStart:position]
-	return makeToken(TokenKind[STRING], start, position+1, value), nil
+	return makeToken(STRING, start, position+1, value), nil
 }
 
 // Converts four hexidecimal chars to the integer that the
@@ -285,7 +271,7 @@ func char2hex(a rune) int {
 	return -1
 }
 
-func makeToken(kind int, start int, end int, value string) Token {
+func makeToken(kind, start, end int, value string) Token {
 	return Token{Kind: kind, Start: start, End: end, Value: value}
 }
 
@@ -295,38 +281,50 @@ func readToken(s *source.Source, fromPosition int) (Token, error) {
 	position := positionAfterWhitespace(s, fromPosition)
 	code := s.RuneAt(position)
 	if position >= bodyLength {
-		return makeToken(TokenKind[EOF], position, position, ""), nil
+		return makeToken(EOF, position, position, ""), nil
 	}
 	switch code {
 	case '!':
-		return makeToken(TokenKind[BANG], position, position+1, ""), nil
+		return makeToken(BANG, position, position+1, ""), nil
 	case '$':
-		return makeToken(TokenKind[DOLLAR], position, position+1, ""), nil
+		return makeToken(DOLLAR, position, position+1, ""), nil
 	case '(':
-		return makeToken(TokenKind[PAREN_L], position, position+1, ""), nil
+		return makeToken(PAREN_L, position, position+1, ""), nil
 	case ')':
-		return makeToken(TokenKind[PAREN_R], position, position+1, ""), nil
+		return makeToken(PAREN_R, position, position+1, ""), nil
 	case '.':
 		if s.RuneAt(position+1) == '.' && s.RuneAt(position+2) == '.' {
-			return makeToken(TokenKind[SPREAD], position, position+3, ""), nil
+			return makeToken(SPREAD, position, position+3, ""), nil
 		}
 		break
 	case ':':
-		return makeToken(TokenKind[COLON], position, position+1, ""), nil
+		return makeToken(COLON, position, position+1, ""), nil
 	case '=':
-		return makeToken(TokenKind[EQUALS], position, position+1, ""), nil
+		return makeToken(EQUALS, position, position+1, ""), nil
 	case '@':
-		return makeToken(TokenKind[AT], position, position+1, ""), nil
+		return makeToken(AT, position, position+1, ""), nil
 	case '[':
-		return makeToken(TokenKind[BRACKET_L], position, position+1, ""), nil
+		return makeToken(BRACKET_L, position, position+1, ""), nil
 	case ']':
-		return makeToken(TokenKind[BRACKET_R], position, position+1, ""), nil
+		return makeToken(BRACKET_R, position, position+1, ""), nil
 	case '{':
-		return makeToken(TokenKind[BRACE_L], position, position+1, ""), nil
+		return makeToken(BRACE_L, position, position+1, ""), nil
 	case '|':
-		return makeToken(TokenKind[PIPE], position, position+1, ""), nil
+		return makeToken(PIPE, position, position+1, ""), nil
 	case '}':
-		return makeToken(TokenKind[BRACE_R], position, position+1, ""), nil
+		return makeToken(BRACE_R, position, position+1, ""), nil
+	case '#':
+		position++
+		startPosition := position
+		for {
+			code := s.RuneAt(position)
+			if !(position < bodyLength &&
+				code != 10 && code != 13 && code != 0x2028 && code != 0x2029) {
+				break
+			}
+			position++
+		}
+		return makeToken(COMMENT, startPosition, position, s.Body()[startPosition:position]), nil
 	case '"':
 		token, err := readString(s, position)
 		if err != nil {
@@ -372,16 +370,6 @@ func positionAfterWhitespace(s *source.Source, startPosition int) int {
 			code == 0x2029 || // paragraph separator
 			code > 8 && code < 14 { // whitespace
 			position++
-		} else if code == '#' {
-			position++
-			for {
-				code := s.RuneAt(position)
-				if !(position < bodyLength &&
-					code != 10 && code != 13 && code != 0x2028 && code != 0x2029) {
-					break
-				}
-				position++
-			}
 		} else {
 			break
 		}
@@ -393,7 +381,7 @@ func GetTokenDesc(token Token) string {
 	if token.Value == "" {
 		return GetTokenKindDesc(token.Kind)
 	}
-	return fmt.Sprintf("%s \"%s\"", GetTokenKindDesc(token.Kind), token.Value)
+	return fmt.Sprintf("%s %q", GetTokenKindDesc(token.Kind), token.Value)
 }
 
 func GetTokenKindDesc(kind int) string {

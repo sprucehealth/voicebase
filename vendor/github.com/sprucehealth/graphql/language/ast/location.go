@@ -9,14 +9,3 @@ type Location struct {
 	End    int
 	Source *source.Source
 }
-
-func NewLocation(loc *Location) *Location {
-	if loc == nil {
-		return &Location{}
-	}
-	return &Location{
-		Start:  loc.Start,
-		End:    loc.End,
-		Source: loc.Source,
-	}
-}

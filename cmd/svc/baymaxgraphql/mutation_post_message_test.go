@@ -627,6 +627,7 @@ func TestPostMessageDestinationNotContactOfPrimary(t *testing.T) {
 	"errors": [
 		{
 			"message": "The provided destination contact info does not belong to the primary entity for this thread: \"SMS\", \"+1-555-555-1234WRONG\"",
+			"type": "INTERNAL",
 			"locations": []
 		}
 	]

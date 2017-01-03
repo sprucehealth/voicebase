@@ -2,8 +2,9 @@ package visitor
 
 import (
 	"fmt"
-	"github.com/sprucehealth/graphql/language/ast"
 	"reflect"
+
+	"github.com/sprucehealth/graphql/language/ast"
 )
 
 const (

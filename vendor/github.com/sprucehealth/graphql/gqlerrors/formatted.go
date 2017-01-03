@@ -51,6 +51,7 @@ func FormatError(err error) FormattedError {
 		}
 	default:
 		return FormattedError{
+			Type:      InternalError,
 			Message:   err.Error(),
 			Locations: []location.SourceLocation{},
 		}
