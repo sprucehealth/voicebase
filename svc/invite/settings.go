@@ -36,7 +36,7 @@ var TwoFactorVerificationForSecureConversationConfig = &settings.Config{
 	Config: &settings.Config_Boolean{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
-				Value: true,
+				Value: false,
 			},
 		},
 	},
