@@ -14,12 +14,10 @@ import (
 func TestNewPatientWelcomeMessage(t *testing.T) {
 	tID, err := models.NewThreadID()
 	test.OK(t, err)
-	t.Run("Ignore-DeletedThread", func(t *testing.T) {
+	t.Run("Ignore-NoThread", func(t *testing.T) {
 		st := newSubscriptionsTest(t)
 		defer st.Finish()
-		st.dal.Expect(mock.NewExpectation(st.dal.Threads, []models.ThreadID{tID}).WithReturns([]*models.Thread{
-			{Deleted: true},
-		}, nil))
+		st.dal.Expect(mock.NewExpectation(st.dal.Threads, []models.ThreadID{tID}).WithReturns(([]*models.Thread)(nil), nil))
 		testNewPatientWelcomeMessage(t, st, &threading.NewThreadEvent{
 			ThreadID: tID.String(),
 		}, nil)

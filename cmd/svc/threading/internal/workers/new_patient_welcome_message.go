@@ -29,14 +29,16 @@ func processNewPatientWelcomeMessage(ctx context.Context, dl dal.DAL, directoryC
 	if err != nil {
 		return errors.Wrapf(err, "Error while looking up thread from New Thread Event for %s", ntev.ThreadID)
 	}
+
+	if len(threads) == 0 {
+		golog.Warningf("No thread found for New Thread Event threadID=%s", ntev.ThreadID)
+		return nil
+	}
+
 	if len(threads) != 1 {
 		return errors.Errorf("Expected to find a single thread for New Thread Event %s bit got %d", ntev.ThreadID, len(threads))
 	}
 	thread := threads[0]
-	if thread.Deleted {
-		golog.Warningf("Ignoring Welcome Message for New Thread Event on DELETED thread %v", thread)
-		return nil
-	}
 	if thread.PrimaryEntityID == "" {
 		golog.Debugf("No primary entity assigned to thread %s. Ignoring Welcome Message", thread.ID)
 		return nil
