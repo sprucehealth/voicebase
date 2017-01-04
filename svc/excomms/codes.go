@@ -14,4 +14,7 @@ const (
 	// ErrorCodeMessageDeliveryFailed indicates that the message cannot be delivered
 	// to the destination.
 	ErrorCodeMessageDeliveryFailed gcode.Code = 102
+
+	// ErrorCodePhoneNumberDeprovisioned indicates that the phone number was deprovisioned.
+	ErrorCodePhoneNumberDeprovisioned = 103
 )

@@ -192,11 +192,13 @@ func (e *excommsService) ProvisionPhoneNumber(ctx context.Context, in *excomms.P
 			if pn := in.GetPhoneNumber(); pn != "" && pn != prov.Endpoint {
 				return nil, grpc.Errorf(codes.AlreadyExists, "A provisioned endpoint found with the same UUID %q but different number %s expected %s", in.UUID, prov.Endpoint, pn)
 			}
+			if prov.Deprovisioned {
+				return nil, grpc.Errorf(excomms.ErrorCodePhoneNumberDeprovisioned, "The phone number %s found with the same UUID %q has been deprovisioned", prov.Endpoint, in.UUID)
+			}
 			return &excomms.ProvisionPhoneNumberResponse{
 				PhoneNumber: prov.Endpoint,
 			}, nil
-		}
-		if errors.Cause(err) != dal.ErrProvisionedEndpointNotFound {
+		} else if err != nil && errors.Cause(err) != dal.ErrProvisionedEndpointNotFound {
 			return nil, errors.Wrapf(err, "failed to lookup provisioned endpoint by UUID %q", in.UUID)
 		}
 	}

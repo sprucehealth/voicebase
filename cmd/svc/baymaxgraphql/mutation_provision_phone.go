@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
@@ -140,6 +141,19 @@ var provisionPhoneNumberMutation = &graphql.Field{
 				ErrorCode:        provisionPhoneNumberErrorCodeUnavailable,
 				ErrorMessage:     "No phone number is available for the chosen area code. Please choose another.",
 			}, nil
+		} else if grpc.Code(err) == excomms.ErrorCodePhoneNumberDeprovisioned {
+			// lets try again with different UUID
+			res, err = ram.ProvisionPhoneNumber(ctx, &excomms.ProvisionPhoneNumberRequest{
+				ProvisionFor: in.OrganizationID,
+				Number: &excomms.ProvisionPhoneNumberRequest_AreaCode{
+					AreaCode: in.AreaCode,
+				},
+				// Use the UUID to guarantee that the organization can only provision one number through this mutation.
+				UUID: in.OrganizationID + ":" + "primary" + ":" + time.Now().String(),
+			})
+			if err != nil {
+				return nil, errors.InternalError(ctx, err)
+			}
 		} else if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}

@@ -249,6 +249,47 @@ func TestProvisionPhoneNumber_NotProvisioned_AreaCode(t *testing.T) {
 	test.Equals(t, mi.pn.PhoneNumber, res.PhoneNumber)
 }
 
+func TestProvisionPhoneNumber_DeProvisioned_AreaCode(t *testing.T) {
+	md := dalmock.New(t)
+	defer md.Finish()
+
+	mi := &mockIncomingPhoneNumberService_Excomms{
+		pn: &twilio.IncomingPhoneNumber{
+			PhoneNumber: "+14152222222",
+		},
+		Expector: &mock.Expector{
+			T: t,
+		},
+	}
+	defer mi.Finish()
+
+	snsC := mock.NewSNSAPI(t)
+	es := &excommsService{
+		twilio:     twilio.NewClient("", "", nil),
+		dal:        md,
+		sns:        snsC,
+		eventTopic: "eventsTopic",
+	}
+	es.twilio.IncomingPhoneNumber = mi
+
+	md.Expect(mock.NewExpectation(md.LookupProvisionedEndpointByUUID, "abc").WithReturns(
+		&models.ProvisionedEndpoint{
+			ProvisionedFor: "test",
+			EndpointType:   models.EndpointTypePhone,
+			Endpoint:       "+16305551212",
+			Deprovisioned:  true,
+		}, nil))
+
+	_, err := es.ProvisionPhoneNumber(context.Background(), &excomms.ProvisionPhoneNumberRequest{
+		ProvisionFor: "test",
+		Number: &excomms.ProvisionPhoneNumberRequest_AreaCode{
+			AreaCode: "415",
+		},
+		UUID: "abc",
+	})
+	test.Equals(t, codes.Code(excomms.ErrorCodePhoneNumberDeprovisioned), grpc.Code(err))
+}
+
 func TestProvisionPhoneNumber_NotProvisioned_PhoneNumber(t *testing.T) {
 	md := dalmock.New(t)
 	defer md.Finish()
