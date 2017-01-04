@@ -108,16 +108,44 @@ var textInviteLinkMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		switch res.Invite.(type) {
+		switch invData := res.Invite.(type) {
 		case *invite.LookupInviteResponse_Patient:
 
-			// send invite to phone number in invite
+			// if possible, send invite to phone number in invite
 			// not to the phone number entered
 
+			ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+				Key: &directory.LookupEntitiesRequest_EntityID{
+					EntityID: invData.Patient.Patient.ParkedEntityID,
+				},
+				RequestedInformation: &directory.RequestedInformation{
+					EntityInformation: []directory.EntityInformation{
+						directory.EntityInformation_CONTACTS,
+					},
+				},
+			})
+			if err != nil {
+				return nil, errors.InternalError(ctx, fmt.Errorf("unable to lookup entity %s : %s", invData.Patient.Patient.ParkedEntityID, err))
+			}
+
+			var phoneNumber string
+			contacts := directory.FilterContacts(ent, directory.ContactType_PHONE)
+			if len(contacts) > 0 {
+				phoneNumber = contacts[0].Value
+			} else {
+				phoneNumber = in.PhoneNumber
+			}
 			if _, err := svc.invite.InvitePatients(ctx, &invite.InvitePatientsRequest{
-				OrganizationEntityID: res.GetPatient().OrganizationEntityID,
-				InviterEntityID:      res.GetPatient().InviterEntityID,
-				Patients:             []*invite.Patient{res.GetPatient().Patient},
+				OrganizationEntityID: invData.Patient.OrganizationEntityID,
+				InviterEntityID:      invData.Patient.InviterEntityID,
+				Patients: []*invite.Patient{
+					{
+						FirstName:      invData.Patient.Patient.FirstName,
+						ParkedEntityID: invData.Patient.Patient.ParkedEntityID,
+						Email:          invData.Patient.Patient.Email,
+						PhoneNumber:    phoneNumber,
+					},
+				},
 			}); err != nil {
 				return nil, errors.InternalError(ctx, err)
 			}

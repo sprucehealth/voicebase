@@ -107,7 +107,28 @@ func TestTextInviteLink_PatientInvite(t *testing.T) {
 	g.svc.inviteAPIDomain = "invite.test.com"
 	g.svc.serviceNumber = phone.Number("+11234567890")
 
+	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
+		Key: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "patientEntityID",
+		},
+		RequestedInformation: &directory.RequestedInformation{
+			EntityInformation: []directory.EntityInformation{
+				directory.EntityInformation_CONTACTS,
+			},
+		},
+	}).WithReturns([]*directory.Entity{
+		{
+			Contacts: []*directory.Contact{
+				{
+					Value:       "+12222222222",
+					ContactType: directory.ContactType_PHONE,
+				},
+			},
+		},
+	}, nil))
+
 	gomock.InOrder(
+
 		// Lookup the invite
 		g.inviteC.EXPECT().LookupInvite(ctx, &invite.LookupInviteRequest{
 			InviteToken: "token",
@@ -133,7 +154,7 @@ func TestTextInviteLink_PatientInvite(t *testing.T) {
 			Patients: []*invite.Patient{
 				{
 					FirstName:      "PatientFirstName",
-					PhoneNumber:    "+17348465523",
+					PhoneNumber:    "+12222222222",
 					ParkedEntityID: "patientEntityID",
 				},
 			},
