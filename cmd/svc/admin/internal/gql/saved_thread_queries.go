@@ -53,7 +53,7 @@ type createSavedThreadQueryInput struct {
 	ShortTitle           string `gql:"shortTitle,required"`
 	LongTitle            string `gql:"longTitle,required"`
 	Description          string `gql:"description,required"`
-	Ordinal              int    `gql:"orginal,required"`
+	Ordinal              int    `gql:"ordinal,required"`
 	NotificationsEnabled bool   `gql:"notificationsEnabled,required"`
 }
 
@@ -239,24 +239,26 @@ var updateSavedThreadQueryField = &graphql.Field{
 }
 
 type updateSavedThreadQueryInput struct {
-	SavedThreadQueryID string  `gql:"savedThreadQueryID"`
-	Query              *string `gql:"query"`
-	ShortTitle         *string `gql:"shortTitle"`
-	LongTitle          *string `gql:"longTitle"`
-	Description        *string `gql:"description"`
-	Ordinal            *int    `gql:"ordinal"`
+	SavedThreadQueryID   string  `gql:"savedThreadQueryID"`
+	Query                *string `gql:"query"`
+	ShortTitle           *string `gql:"shortTitle"`
+	LongTitle            *string `gql:"longTitle"`
+	Description          *string `gql:"description"`
+	Ordinal              *int    `gql:"ordinal"`
+	NotificationsEnabled *bool   `gql:"notificationsEnabled"`
 }
 
 var updateSavedThreadQueryInputType = graphql.NewInputObject(
 	graphql.InputObjectConfig{
 		Name: "UpdateSavedThreadQueryInput",
 		Fields: graphql.InputObjectConfigFieldMap{
-			"savedThreadQueryID": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"query":              &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"shortTitle":         &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"longTitle":          &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"description":        &graphql.InputObjectFieldConfig{Type: graphql.String},
-			"ordinal":            &graphql.InputObjectFieldConfig{Type: graphql.Int},
+			"savedThreadQueryID":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"query":                &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"shortTitle":           &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"longTitle":            &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"description":          &graphql.InputObjectFieldConfig{Type: graphql.String},
+			"ordinal":              &graphql.InputObjectFieldConfig{Type: graphql.Int},
+			"notificationsEnabled": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Boolean)},
 		},
 	},
 )
@@ -327,6 +329,13 @@ func updateSavedThreadQueryResolve(p graphql.ResolveParams) (interface{}, error)
 	}
 	if in.Description != nil {
 		updateReq.Description = strings.TrimSpace(*in.Description)
+	}
+	if in.NotificationsEnabled != nil {
+		if *in.NotificationsEnabled {
+			updateReq.NotificationsEnabled = threading.NOTIFICATIONS_ENABLED_UPDATE_TRUE
+		} else {
+			updateReq.NotificationsEnabled = threading.NOTIFICATIONS_ENABLED_UPDATE_FALSE
+		}
 	}
 
 	if _, err := threadingCli.UpdateSavedQuery(ctx, updateReq); err != nil {
