@@ -82,8 +82,9 @@ var createSavedThreadQueryOutputType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "CreateSavedThreadQueryOutput",
 		Fields: graphql.Fields{
-			"success":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"errorMessage": &graphql.Field{Type: graphql.String},
+			"success":          &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+			"errorMessage":     &graphql.Field{Type: graphql.String},
+			"savedThreadQuery": &graphql.Field{Type: savedThreadQueryType},
 		},
 		IsTypeOf: func(value interface{}, info graphql.ResolveInfo) bool {
 			_, ok := value.(*createSavedThreadQueryOutput)
@@ -151,7 +152,10 @@ func createSavedThreadQueryResolve(p graphql.ResolveParams) (interface{}, error)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	return sqs[0], nil
+	return &createSavedThreadQueryOutput{
+		Success:          true,
+		SavedThreadQuery: sqs[0],
+	}, nil
 }
 
 // Delete
