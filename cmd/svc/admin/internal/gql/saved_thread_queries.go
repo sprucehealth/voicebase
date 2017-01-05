@@ -22,6 +22,7 @@ var savedThreadQueryType = graphql.NewObject(
 		Name: "SavedThreadQuery",
 		Fields: graphql.Fields{
 			"id":                   &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+			"type":                 &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"query":                &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"shortTitle":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"longTitle":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -243,7 +244,7 @@ type updateSavedThreadQueryInput struct {
 	ShortTitle         *string `gql:"shortTitle"`
 	LongTitle          *string `gql:"longTitle"`
 	Description        *string `gql:"description"`
-	Ordinal            *int    `gql:"orginal"`
+	Ordinal            *int    `gql:"ordinal"`
 }
 
 var updateSavedThreadQueryInputType = graphql.NewInputObject(

@@ -244,6 +244,7 @@ func TransformReferenceToModel(r *threading.Reference) *Reference {
 // SavedThreadQuery is a saved thread query of the threading service
 type SavedThreadQuery struct {
 	ID                   string `json:"id"`
+	Type                 string `json:"type"`
 	Query                string `json:"query"`
 	ShortTitle           string `json:"shortTitle"`
 	LongTitle            string `json:"longTitle"`
@@ -278,6 +279,7 @@ func TransformSavedThreadQueryToModel(sq *threading.SavedQuery) (*SavedThreadQue
 	}
 	return &SavedThreadQuery{
 		ID:                   sq.ID,
+		Type:                 sq.Type.String(),
 		Query:                query,
 		ShortTitle:           sq.ShortTitle,
 		LongTitle:            sq.LongTitle,
