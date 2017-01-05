@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -29,6 +30,8 @@ type conf struct {
 	DBName     string
 	DBUsername string
 	DBPassword string
+	DBTLS      string
+	DataAPI    api.DataAPI
 }
 
 func (c *conf) validate() error {
@@ -42,6 +45,22 @@ func (c *conf) validate() error {
 		return errors.New("DB Username required")
 	}
 	return nil
+}
+
+func (c *conf) db() (*sql.DB, error) {
+	return dbutil.ConnectMySQL(&dbutil.DBConfig{
+		Host:          c.DBHost,
+		Port:          c.DBPort,
+		Name:          c.DBName,
+		User:          c.DBUsername,
+		Password:      c.DBPassword,
+		EnableTLS:     c.DBTLS == "true" || c.DBTLS == "skip-verify",
+		SkipVerifyTLS: c.DBTLS == "skip-verify",
+	})
+}
+
+func (c *conf) patientCaseService() patientcase.Service {
+	return patientcase.NewService(c.DataAPI)
 }
 
 func loadConfig() *conf {
@@ -67,14 +86,15 @@ type command interface {
 	run(args []string) error
 }
 
-type commandNew func(api.DataAPI, patientcase.Service) (command, error)
+type commandNew func(cnf *conf) (command, error)
 
 var commands = map[string]commandNew{
-	"careteam":      newCareTeamCmd,
-	"case":          newCaseCmd,
-	"cases":         newCasesCmd,
-	"movecase":      newMoveCaseCmd,
-	"searchdoctors": newSearchDoctorsCmd,
+	"careteam":        newCareTeamCmd,
+	"case":            newCaseCmd,
+	"cases":           newCasesCmd,
+	"movecase":        newMoveCaseCmd,
+	"searchdoctors":   newSearchDoctorsCmd,
+	"migratepatients": newMigratePatientsCmd,
 }
 
 func main() {
@@ -90,6 +110,8 @@ func main() {
 	flag.StringVar(&cnf.DBName, "db_name", cnf.DBName, "mysql database name")
 	flag.StringVar(&cnf.DBUsername, "db_username", cnf.DBUsername, "mysql database username")
 	flag.StringVar(&cnf.DBPassword, "db_password", cnf.DBPassword, "mysql database password")
+	flag.StringVar(&cnf.DBTLS, "db_tls", cnf.DBTLS, "mysql database TLS setting (skip-verify or true)")
+
 	flag.Parse()
 
 	if err := cnf.validate(); err != nil {
@@ -116,14 +138,13 @@ func main() {
 	if err != nil {
 		golog.Fatalf("Unable to initialize data service layer: %s", err)
 	}
-
-	svc := patientcase.NewService(dataAPI)
+	cnf.DataAPI = dataAPI
 
 	cmd := flag.Arg(0)
 
 	for name, cfn := range commands {
 		if name == cmd {
-			c, err := cfn(dataAPI, svc)
+			c, err := cfn(cnf)
 			if err != nil {
 				golog.Fatalf(err.Error())
 			}

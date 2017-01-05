@@ -10,16 +10,15 @@ import (
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
 	"github.com/sprucehealth/backend/cmd/svc/restapi/common"
-	"github.com/sprucehealth/backend/cmd/svc/restapi/patientcase"
 )
 
 type casesCmd struct {
 	dataAPI api.DataAPI
 }
 
-func newCasesCmd(dataAPI api.DataAPI, pcSvc patientcase.Service) (command, error) {
+func newCasesCmd(cnf *conf) (command, error) {
 	return &casesCmd{
-		dataAPI: dataAPI,
+		dataAPI: cnf.DataAPI,
 	}, nil
 }
 

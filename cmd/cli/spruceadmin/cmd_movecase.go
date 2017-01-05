@@ -20,10 +20,10 @@ type moveCaseCmd struct {
 	pcSvc   patientcase.Service
 }
 
-func newMoveCaseCmd(dataAPI api.DataAPI, pcSvc patientcase.Service) (command, error) {
+func newMoveCaseCmd(cnf *conf) (command, error) {
 	return &moveCaseCmd{
-		dataAPI: dataAPI,
-		pcSvc:   pcSvc,
+		dataAPI: cnf.DataAPI,
+		pcSvc:   cnf.patientCaseService(),
 	}, nil
 }
 

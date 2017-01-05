@@ -6,7 +6,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/sprucehealth/backend/cmd/svc/restapi/api"
-	"github.com/sprucehealth/backend/cmd/svc/restapi/patientcase"
 	"github.com/sprucehealth/backend/libs/errors"
 )
 
@@ -14,9 +13,9 @@ type searchDoctorsCmd struct {
 	dataAPI api.DataAPI
 }
 
-func newSearchDoctorsCmd(dataAPI api.DataAPI, pcSvc patientcase.Service) (command, error) {
+func newSearchDoctorsCmd(cnf *conf) (command, error) {
 	return &searchDoctorsCmd{
-		dataAPI: dataAPI,
+		dataAPI: cnf.DataAPI,
 	}, nil
 }
 
