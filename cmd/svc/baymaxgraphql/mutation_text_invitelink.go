@@ -114,7 +114,7 @@ var textInviteLinkMutation = &graphql.Field{
 			// if possible, send invite to phone number in invite
 			// not to the phone number entered
 
-			ent, err := raccess.Entity(ctx, ram, &directory.LookupEntitiesRequest{
+			ent, err := raccess.UnauthorizedEntity(ctx, ram, &directory.LookupEntitiesRequest{
 				Key: &directory.LookupEntitiesRequest_EntityID{
 					EntityID: invData.Patient.Patient.ParkedEntityID,
 				},
