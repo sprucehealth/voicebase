@@ -1190,6 +1190,7 @@ func TestSavedQueries(t *testing.T) {
 		ShortTitle:           "sq1",
 		NotificationsEnabled: true,
 		Type:                 models.SavedQueryTypeNormal,
+		Hidden:               true,
 	}
 	_, err := dal.CreateSavedQuery(ctx, sq1)
 	test.OK(t, err)
@@ -1224,11 +1225,13 @@ func TestSavedQueries(t *testing.T) {
 
 	newQuery := &models.Query{Expressions: []*models.Expr{{Value: &models.Expr_Flag_{Flag: models.EXPR_FLAG_UNREAD_REFERENCE}}}}
 	test.OK(t, dal.UpdateSavedQuery(ctx, sq1.ID, &SavedQueryUpdate{
-		ShortTitle:  ptr.String("new short title"),
-		LongTitle:   ptr.String("new long title"),
-		Description: ptr.String("new description"),
-		Ordinal:     ptr.Int(19),
-		Query:       newQuery,
+		ShortTitle:           ptr.String("new short title"),
+		LongTitle:            ptr.String("new long title"),
+		Description:          ptr.String("new description"),
+		Ordinal:              ptr.Int(19),
+		Query:                newQuery,
+		Hidden:               ptr.Bool(false),
+		NotificationsEnabled: ptr.Bool(false),
 	}))
 
 	sq, err = dal.SavedQuery(ctx, sq1.ID)
@@ -1238,6 +1241,8 @@ func TestSavedQueries(t *testing.T) {
 	test.Equals(t, "new description", sq.Description)
 	test.Equals(t, 19, sq.Ordinal)
 	test.Equals(t, newQuery, sq.Query)
+	test.Equals(t, false, sq.Hidden)
+	test.Equals(t, false, sq.NotificationsEnabled)
 
 	test.OK(t, dal.DeleteSavedQueries(ctx, []models.SavedQueryID{sq1.ID}))
 	_, err = dal.SavedQuery(ctx, sq1.ID)

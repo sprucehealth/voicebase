@@ -1768,15 +1768,24 @@ func (s *threadsServer) UpdateSavedQuery(ctx context.Context, in *threading.Upda
 	if in.Ordinal > 0 {
 		update.Ordinal = ptr.Int(int(in.Ordinal))
 	}
-	// Unfortunate artifact of go defaults and no grpc/protobuf ptr support
-	if in.NotificationsEnabled != threading.NOTIFICATIONS_ENABLED_UPDATE_NONE {
+	if in.NotificationsEnabled != threading.BOOL_NONE {
 		switch in.NotificationsEnabled {
-		case threading.NOTIFICATIONS_ENABLED_UPDATE_TRUE:
+		case threading.BOOL_TRUE:
 			update.NotificationsEnabled = ptr.Bool(true)
-		case threading.NOTIFICATIONS_ENABLED_UPDATE_FALSE:
+		case threading.BOOL_FALSE:
 			update.NotificationsEnabled = ptr.Bool(false)
 		default:
 			return nil, grpc.Errorf(codes.InvalidArgument, "Invalid NotificationsEnabled value %s", in.NotificationsEnabled)
+		}
+	}
+	if in.Hidden != threading.BOOL_NONE {
+		switch in.Hidden {
+		case threading.BOOL_TRUE:
+			update.Hidden = ptr.Bool(true)
+		case threading.BOOL_FALSE:
+			update.Hidden = ptr.Bool(false)
+		default:
+			return nil, grpc.Errorf(codes.InvalidArgument, "Invalid Hidden value %s", in.Hidden)
 		}
 	}
 	if in.Query != nil {

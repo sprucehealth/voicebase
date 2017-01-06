@@ -92,12 +92,12 @@ func updateSavedThreadQuery(p graphql.ResolveParams, in updateSavedThreadQueryIn
 
 	uReq := &threading.UpdateSavedQueryRequest{
 		SavedQueryID:         in.SavedQueryID,
-		NotificationsEnabled: threading.NOTIFICATIONS_ENABLED_UPDATE_NONE,
+		NotificationsEnabled: threading.BOOL_NONE,
 	}
 	if in.NotificationsEnabled {
-		uReq.NotificationsEnabled = threading.NOTIFICATIONS_ENABLED_UPDATE_TRUE
+		uReq.NotificationsEnabled = threading.BOOL_TRUE
 	} else {
-		uReq.NotificationsEnabled = threading.NOTIFICATIONS_ENABLED_UPDATE_FALSE
+		uReq.NotificationsEnabled = threading.BOOL_FALSE
 	}
 
 	resp, err := ram.UpdateSavedQuery(ctx, uReq)

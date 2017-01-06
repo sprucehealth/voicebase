@@ -411,14 +411,14 @@ func handleSavedQueryBackwards(ctx context.Context, ram raccess.ResourceAccessor
 			case notification.ThreadActivityNotificationPreferenceAllMessages:
 				if _, err := ram.UpdateSavedQuery(ctx, &threading.UpdateSavedQueryRequest{
 					SavedQueryID:         patientSQ.ID,
-					NotificationsEnabled: threading.NOTIFICATIONS_ENABLED_UPDATE_TRUE,
+					NotificationsEnabled: threading.BOOL_TRUE,
 				}); err != nil {
 					return errors.Trace(err)
 				}
 			case notification.ThreadActivityNotificationPreferenceReferencedOnly, notification.ThreadActivityNotificationPreferenceOff:
 				if _, err := ram.UpdateSavedQuery(ctx, &threading.UpdateSavedQueryRequest{
 					SavedQueryID:         patientSQ.ID,
-					NotificationsEnabled: threading.NOTIFICATIONS_ENABLED_UPDATE_FALSE,
+					NotificationsEnabled: threading.BOOL_FALSE,
 				}); err != nil {
 					return errors.Trace(err)
 				}
@@ -433,14 +433,14 @@ func handleSavedQueryBackwards(ctx context.Context, ram raccess.ResourceAccessor
 			case notification.ThreadActivityNotificationPreferenceAllMessages:
 				if _, err := ram.UpdateSavedQuery(ctx, &threading.UpdateSavedQueryRequest{
 					SavedQueryID:         teamSQ.ID,
-					NotificationsEnabled: threading.NOTIFICATIONS_ENABLED_UPDATE_TRUE,
+					NotificationsEnabled: threading.BOOL_TRUE,
 				}); err != nil {
 					return errors.Trace(err)
 				}
 			case notification.ThreadActivityNotificationPreferenceReferencedOnly, notification.ThreadActivityNotificationPreferenceOff:
 				if _, err := ram.UpdateSavedQuery(ctx, &threading.UpdateSavedQueryRequest{
 					SavedQueryID:         teamSQ.ID,
-					NotificationsEnabled: threading.NOTIFICATIONS_ENABLED_UPDATE_FALSE,
+					NotificationsEnabled: threading.BOOL_FALSE,
 				}); err != nil {
 					return errors.Trace(err)
 				}

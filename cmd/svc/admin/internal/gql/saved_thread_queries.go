@@ -55,6 +55,7 @@ type createSavedThreadQueryInput struct {
 	Description          string `gql:"description,required"`
 	Ordinal              int    `gql:"ordinal,required"`
 	NotificationsEnabled bool   `gql:"notificationsEnabled,required"`
+	Hidden               bool   `gql:"hidden,required"`
 }
 
 var createSavedThreadQueryInputType = graphql.NewInputObject(
@@ -68,6 +69,7 @@ var createSavedThreadQueryInputType = graphql.NewInputObject(
 			"description":          &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
 			"ordinal":              &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Int)},
 			"notificationsEnabled": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Boolean)},
+			"hidden":               &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Boolean)},
 		},
 	},
 )
@@ -117,7 +119,7 @@ func createSavedThreadQueryResolve(p graphql.ResolveParams) (interface{}, error)
 
 	createReq := &threading.CreateSavedQueryRequest{
 		Type:                 threading.SAVED_QUERY_TYPE_NORMAL,
-		Hidden:               false,
+		Hidden:               in.Hidden,
 		EntityID:             in.EntityID,
 		Query:                query,
 		Ordinal:              int32(in.Ordinal),
@@ -250,6 +252,7 @@ type updateSavedThreadQueryInput struct {
 	Description          *string `gql:"description"`
 	Ordinal              *int    `gql:"ordinal"`
 	NotificationsEnabled *bool   `gql:"notificationsEnabled"`
+	Hidden               *bool   `gql:"hidden"`
 }
 
 var updateSavedThreadQueryInputType = graphql.NewInputObject(
@@ -262,7 +265,8 @@ var updateSavedThreadQueryInputType = graphql.NewInputObject(
 			"longTitle":            &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"description":          &graphql.InputObjectFieldConfig{Type: graphql.String},
 			"ordinal":              &graphql.InputObjectFieldConfig{Type: graphql.Int},
-			"notificationsEnabled": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Boolean)},
+			"notificationsEnabled": &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+			"hidden":               &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
 		},
 	},
 )
@@ -336,9 +340,16 @@ func updateSavedThreadQueryResolve(p graphql.ResolveParams) (interface{}, error)
 	}
 	if in.NotificationsEnabled != nil {
 		if *in.NotificationsEnabled {
-			updateReq.NotificationsEnabled = threading.NOTIFICATIONS_ENABLED_UPDATE_TRUE
+			updateReq.NotificationsEnabled = threading.BOOL_TRUE
 		} else {
-			updateReq.NotificationsEnabled = threading.NOTIFICATIONS_ENABLED_UPDATE_FALSE
+			updateReq.NotificationsEnabled = threading.BOOL_FALSE
+		}
+	}
+	if in.Hidden != nil {
+		if *in.Hidden {
+			updateReq.Hidden = threading.BOOL_TRUE
+		} else {
+			updateReq.Hidden = threading.BOOL_FALSE
 		}
 	}
 

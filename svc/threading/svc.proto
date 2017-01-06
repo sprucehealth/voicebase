@@ -421,11 +421,11 @@ message CreateSavedQueryResponse {
 	SavedQuery saved_query = 1;
 }
 
-// Unfortunate artifact of go defaults and no grpc/protobuf ptr support
-enum NotificationsEnabledUpdate {
-	NOTIFICATIONS_ENABLED_UPDATE_NONE = 0;
-	NOTIFICATIONS_ENABLED_UPDATE_TRUE = 1;
-	NOTIFICATIONS_ENABLED_UPDATE_FALSE = 2;
+// Bool is a ternary boolean that can be set to no value
+enum Bool {
+	BOOL_NONE = 0;
+	BOOL_TRUE = 1;
+	BOOL_FALSE = 2;
 }
 
 message UpdateSavedQueryRequest {
@@ -434,9 +434,10 @@ message UpdateSavedQueryRequest {
 	string short_title = 3;
 	int32 ordinal = 4;
 	bool force_rebuild = 5; // If true then force rebuilding the saved query index even if the query doesn't change
-	NotificationsEnabledUpdate notifications_enabled = 6;
+	Bool notifications_enabled = 6;
 	string long_title = 7;
 	string description = 8;
+	Bool hidden = 9;
 }
 
 message UpdateSavedQueryResponse {

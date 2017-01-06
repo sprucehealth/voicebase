@@ -921,7 +921,7 @@ func TestModifySetting_PatientBackwardsNotifications(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.UpdateSavedQuery, &threading.UpdateSavedQueryRequest{
 		SavedQueryID:         "patientSQID",
-		NotificationsEnabled: threading.NOTIFICATIONS_ENABLED_UPDATE_FALSE,
+		NotificationsEnabled: threading.BOOL_FALSE,
 	}))
 
 	res := g.query(ctx, `
@@ -1092,7 +1092,7 @@ func TestModifySetting_TeamBackwardsNotifications(t *testing.T) {
 
 	g.ra.Expect(mock.NewExpectation(g.ra.UpdateSavedQuery, &threading.UpdateSavedQueryRequest{
 		SavedQueryID:         "teamSQID",
-		NotificationsEnabled: threading.NOTIFICATIONS_ENABLED_UPDATE_FALSE,
+		NotificationsEnabled: threading.BOOL_FALSE,
 	}))
 
 	res := g.query(ctx, `

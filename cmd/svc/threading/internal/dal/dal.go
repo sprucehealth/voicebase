@@ -145,6 +145,7 @@ type SavedQueryUpdate struct {
 	Description          *string
 	Ordinal              *int
 	NotificationsEnabled *bool
+	Hidden               *bool
 }
 
 type DAL interface {
@@ -1307,6 +1308,9 @@ func (d *dal) UpdateSavedQuery(ctx context.Context, id models.SavedQueryID, upda
 	}
 	if update.NotificationsEnabled != nil {
 		args.Append("notifications_enabled", *update.NotificationsEnabled)
+	}
+	if update.Hidden != nil {
+		args.Append("hidden", *update.Hidden)
 	}
 	if args.IsEmpty() {
 		return nil
