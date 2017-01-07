@@ -43,6 +43,7 @@ type Contact struct {
 	Value       string `json:"value"`
 	Provisioned bool   `json:"provisioned"`
 	Label       string `json:"label"`
+	EntityID    string `json:"entityID"`
 }
 
 // TransformEntitiesToModels transforms the internal directory entities into something understood by graphql
@@ -121,5 +122,6 @@ func TransformContactToModel(c *directory.Contact) *Contact {
 		Value:       c.Value,
 		Provisioned: c.Provisioned,
 		Label:       c.Label,
+		EntityID:    c.EntityID,
 	}
 }

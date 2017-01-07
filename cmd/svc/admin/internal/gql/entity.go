@@ -96,7 +96,18 @@ func entitySettingsResolve(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	entity := p.Source.(*models.Entity)
 	golog.ContextLogger(ctx).Debugf("Looking up entity settings for %s", entity.ID)
-	return getNodeSettings(ctx, client.Settings(p), entity.ID)
+	// For entities, don't return anything that requires a subkey
+	var entSettings []*models.Setting
+	settings, err := getNodeSettings(ctx, client.Settings(p), entity.ID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	for _, s := range settings {
+		if !s.SubkeyRequired {
+			entSettings = append(entSettings, s)
+		}
+	}
+	return entSettings, nil
 }
 
 func entityVendorAccountsResolve(p graphql.ResolveParams) (interface{}, error) {

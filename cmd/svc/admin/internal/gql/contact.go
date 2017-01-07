@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/graphql"
 )
 
@@ -85,6 +86,8 @@ var contactType = graphql.NewObject(
 			"value":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"provisioned": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 			"label":       &graphql.Field{Type: graphql.String},
+			"settings":    &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(settingType)), Resolve: contactSettingsResolve},
+			"entityID":    &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 		},
 	})
 
@@ -97,6 +100,41 @@ func getContact(ctx context.Context, dirCli directory.DirectoryClient, id string
 		return nil, errors.Trace(err)
 	}
 	return models.TransformContactToModel(resp.Contact), nil
+}
+
+func contactSettingsResolve(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	contact := p.Source.(*models.Contact)
+	golog.ContextLogger(ctx).Debugf("Looking up contact settings for %s", contact.ID)
+	return getContactSettings(ctx, client.Settings(p), contact)
+}
+
+func getContactSettings(ctx context.Context, settingsClient settings.SettingsClient, contact *models.Contact) (interface{}, error) {
+	// For contacts, only return settings that requires a subkey
+	contactSettingMap := make(map[string]*models.Setting)
+	settings, err := getNodeSettings(ctx, settingsClient, contact.EntityID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	for _, s := range settings {
+		if s.SubkeyRequired && (s.Subkey == "" || s.Subkey == contact.Value) {
+			if ct, ok := contactSettingMap[s.Key]; ok {
+				if ct.Subkey == "" {
+					contactSettingMap[s.Key] = s
+				}
+			} else {
+				contactSettingMap[s.Key] = s
+			}
+		}
+	}
+	contactSettings := make([]*models.Setting, len(contactSettingMap))
+	i := 0
+	for _, s := range contactSettingMap {
+		s.Subkey = contact.Value
+		contactSettings[i] = s
+		i++
+	}
+	return contactSettings, nil
 }
 
 // provisionNumber

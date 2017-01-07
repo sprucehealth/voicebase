@@ -146,7 +146,18 @@ func accountSettingsResolve(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	account := p.Source.(*models.Account)
 	golog.ContextLogger(ctx).Debugf("Looking up account settings for %s", account.ID)
-	return getNodeSettings(ctx, client.Settings(p), account.ID)
+	// For accounts, don't return anything that requires a subkey
+	var accSettings []*models.Setting
+	settings, err := getNodeSettings(ctx, client.Settings(p), account.ID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	for _, s := range settings {
+		if !s.SubkeyRequired {
+			accSettings = append(accSettings, s)
+		}
+	}
+	return accSettings, nil
 }
 
 // modifyAccountContact

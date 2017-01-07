@@ -194,6 +194,7 @@ message Contact {
 	string id = 4 [(gogoproto.customname) = "ID"];
 	string label = 5;
 	bool verified = 6;
+	string entity_id = 7 [(gogoproto.customname) = "EntityID"];
 }
 
 message LookupEntitiesByContactRequest {
