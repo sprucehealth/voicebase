@@ -17,9 +17,18 @@ import (
 )
 
 const (
-	eventSetupAnsweringService = "setup_answering_service"
+	eventSetupPhoneLine        = "setup_phone_line"
 	eventSetupTeamMessaging    = "setup_team_messaging"
 	eventSetupTelemedicine     = "setup_telemedicine"
+	eventSetupPatientMessaging = "setup_patient_messaging"
+	eventSetupAnsweringService = "setup_answering_service"
+
+	stepProvisionedPhoneNumber = 1
+	stepAnsweringService       = 2
+	stepTeamMessaging          = 4
+	stepTelemedicine           = 8
+	stepPatientMessaging       = 16
+	stepPhoneLine              = 32
 )
 
 // CreateOnboardingThread create a new onboarding thread
@@ -28,8 +37,7 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 		return nil, grpc.Errorf(codes.InvalidArgument, "OrganizationID is required")
 	}
 
-	phoneSetupURL := deeplink.OrgSettingsPhoneURL(s.webDomain, in.OrganizationID)
-	answeringServiceURL := deeplink.PostEventURL(s.webDomain, eventSetupAnsweringService, map[string][]string{
+	phoneSetupURL := deeplink.PostEventURL(s.webDomain, eventSetupPhoneLine, map[string][]string{
 		"refresh_thread": {"1"},
 		"org_id":         {in.OrganizationID},
 	})
@@ -41,20 +49,38 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 		"refresh_thread": {"1"},
 		"org_id":         {in.OrganizationID},
 	})
+	patientMessagingURL := deeplink.PostEventURL(s.webDomain, eventSetupPatientMessaging, map[string][]string{
+		"refresh_thread": {"1"},
+		"org_id":         {in.OrganizationID},
+	})
+
+	supportThreads, err := s.dal.ThreadsForOrg(ctx, in.OrganizationID, models.ThreadTypeSupport, 1)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	// Really should be exactly one, but to not blow up for our own support forum only err when none exist.
+	if len(supportThreads) < 1 {
+		return nil, grpc.Errorf(codes.FailedPrecondition, "Expected at least 1 support thread for org %s", in.OrganizationID)
+	}
+	supportThread := supportThreads[0]
+
+	supportThreadURL := deeplink.ThreadURLShareable(s.webDomain, in.OrganizationID, supportThread.ID.String())
+
 	msgBML := bml.BML{
-		"Welcome! You can access our ",
-		&bml.Anchor{HREF: "https://help.sprucehealth.com", Text: "setup guide here"},
-		", at any time. In the meantime, how would you like to use Spruce? (You can tap on multiple options)\n\n",
+		"👋 Hi! Spruce can do many things to help you provide great care. To learn more about what Spruce can do for you, tap any item below and we’ll guide you through it...\n\n ",
 
-		&bml.Anchor{HREF: phoneSetupURL, Text: "Second phone line"},
-		" for calls and texts with patients, without disclosing your personal number.\n\n",
+		&bml.Anchor{HREF: phoneSetupURL, Text: "📞  2nd phone line"}, "\n\n",
 
-		&bml.Anchor{HREF: answeringServiceURL, Text: "Automated answering service"},
-		" that transcribes urgent voicemails and notifies you.\n\n",
+		&bml.Anchor{HREF: patientMessagingURL, Text: "💬  Patient messaging"}, "\n\n",
 
-		&bml.Anchor{HREF: teamMessagingURL, Text: "Secure team chat and care coordination"}, ".\n\n",
+		&bml.Anchor{HREF: teamMessagingURL, Text: "👥  Team chat & care coordination"}, "\n\n",
 
-		&bml.Anchor{HREF: telemedicineURL, Text: "Digital care and telemedicine"}, ".",
+		&bml.Anchor{HREF: telemedicineURL, Text: "⚡  Telemedicine"}, "\n\n",
+
+		"If you have questions at any time, just ",
+		&bml.Anchor{HREF: supportThreadURL, Text: "message us"},
+		" or check out our ",
+		&bml.Anchor{HREF: "https://help.sprucehealth.com", Text: "Knowledge Center"}, ".",
 	}
 	msg, err := msgBML.Format()
 	if err != nil {
@@ -157,7 +183,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 	var msgBML bml.BML
 	switch in.EventType {
 	case threading.ONBOARDING_THREAD_EVENT_TYPE_PROVISIONED_PHONE:
-		if state.Step&1 == 0 {
+		if state.Step&stepProvisionedPhoneNumber == 0 {
 			// Second phone line
 			pn, err := phone.ParseNumber(in.GetProvisionedPhone().PhoneNumber)
 			if err != nil {
@@ -170,50 +196,79 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				prettyPhone = pn.String()
 			}
 			msgBML = bml.BML{
-				`You can now use your Spruce number ` + prettyPhone + ` for calls, texts, and voicemails with patients.`,
-				` Just message us in `, &bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"}, ` if you have any questions or problems.`,
+				`💥  ` + prettyPhone + " is your Spruce number.\n\n",
+				"You can start a new call anytime by tapping the ➕ and choosing “Dialpad”.\n\n",
+				"To access your Spruce Number settings, tap the icon in the upper left of the home screen and then tap your Spruce number.\n\n",
+				"If you’d like to learn more about using your Spruce number, visit our ",
+				&bml.Anchor{HREF: "https://help.sprucehealth.com/hc/en-us/sections/202689223-Phone-Functionality", Text: "phone guide"},
+				" or ", &bml.Anchor{HREF: supportThreadURL, Text: "message us"}, ".",
 			}
-			newStepBit = 1
+			newStepBit = stepProvisionedPhoneNumber
 		}
 	case threading.ONBOARDING_THREAD_EVENT_TYPE_GENERIC_SETUP:
 		ev := in.GetGenericSetup()
 		switch ev.Name {
 		case eventSetupAnsweringService:
-			if state.Step&2 == 0 {
+			if state.Step&stepAnsweringService == 0 {
 				phoneSetupURL := deeplink.OrgSettingsPhoneURL(s.webDomain, setupThread.OrganizationID)
 				supportThreadURL := deeplink.ThreadURLShareable(s.webDomain, setupThread.OrganizationID, supportThread.ID.String())
 				msgBML = bml.BML{
-					`As a paid feature your Spruce line can triage and transcribe patient voicemails, notifying you`,
+					`As a paid feature your Spruce line can triage patient voicemails, notifying you`,
 					" via text when an urgent voicemail is received. You can also add teammates to create an on-call rotation.\n\n",
 					`To do this, first `, &bml.Anchor{HREF: phoneSetupURL, Text: "set up your Spruce number"},
 					` if you haven’t already. Then tell us in `, &bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"},
 					` that you would like to enable the answering service feature.`,
 				}
-				newStepBit = 2
+				newStepBit = stepAnsweringService
+			}
+		case eventSetupPhoneLine:
+			if state.Step&stepPhoneLine == 0 {
+				phoneSetupURL := deeplink.OrgSettingsPhoneURL(s.webDomain, setupThread.OrganizationID)
+				msgBML = bml.BML{
+					"Create a second phone line to make calls to your patients without disclosing your personal number.\n\n",
+					&bml.Anchor{HREF: phoneSetupURL, Text: "☎  Claim your Spruce Number now"}, "\n\n",
+					"or...\n\n",
+					&bml.Anchor{HREF: "https://help.sprucehealth.com/hc/en-us/articles/210312806-Making-Calls", Text: "📖 Learn more about how it works"},
+				}
+				newStepBit = stepPhoneLine
+			}
+
+		case eventSetupPatientMessaging:
+			if state.Step&stepPatientMessaging == 0 {
+				msgBML = bml.BML{
+					"📱 Send and receive secure messages or standard SMS messages and emails (when appropriate). It’s free to try for 30 days!\n\n",
+					&bml.Anchor{HREF: "https://vimeo.com/183376736", Text: "Check out this video overview"}, " of the ins and outs of patient messaging on Spruce, then start a new patient conversation in a few easy steps:\n\n",
+					"1. Return to the homescreen and tap the ➕ button",
+					"2. Tap 👤 Patient Conversation",
+					"3. Choose 🔒 Secure Conversations for conversations involving protected health information (PHI)",
+					"4. Or choose 💬 Standard Conversations to send traditional SMS or email messages\n\n",
+					"To learn more about messaging patients using Spruce, ", &bml.Anchor{HREF: "https://help.sprucehealth.com/hc/en-us/articles/213827683-Understanding-Patient-Conversations", Text: "check out this guide"}, " we put together.",
+				}
+				newStepBit = stepPatientMessaging
 			}
 		case eventSetupTeamMessaging:
-			if state.Step&4 == 0 {
+			if state.Step&stepTeamMessaging == 0 {
 				inviteURL := deeplink.OrgColleagueInviteURL(s.webDomain, setupThread.OrganizationID)
 				msgBML = bml.BML{
-					`After `, &bml.Anchor{HREF: inviteURL, Text: "adding teammates"}, `, you can start a new team conversation`,
-					" from the home screen and message 1:1 or in group chats.\n\n",
-					`You can also collaborate and make notes within`,
-					` patient conversations (patients won’t see this activity, but your teammates will).`,
+					"🙌 Spruce is built for teams! To invite a teammate to join your practice, tap the settings icon in the upper left of the home screen and then select ", &bml.Anchor{HREF: inviteURL, Text: "Invite Teammates"}, ".\n\n",
+					"When you invite a teammate to join your Spruce organization you unlock:\n",
+					"📥  A Shared Team Inbox - keep everyone in sync with one inbox that gives all teammates the ability to see and respond to incoming patient communication\n",
+					"🔒  Secure Team Chats - coordinate care in a private team-only conversation\n",
+					"📝  Internal Notes and @Pages - Tap ‘Internal’ to create “sticky notes” in patient conversations that are only visible to teammates. Use the ‘@’ sign to explicitly notify a teammate to something important\n\n",
+					&bml.Anchor{HREF: "https://vimeo.com/176232003", Text: "See team chat in action"}, " or ", &bml.Anchor{HREF: "https://help.sprucehealth.com/hc/en-us/sections/202692423-Team-Conversations", Text: "visit our Knowledge Center"},
+					" to learn more about adding teammates to your practice.",
 				}
-				newStepBit = 4
+				newStepBit = stepTeamMessaging
 			}
 		case eventSetupTelemedicine:
-			if state.Step&8 == 0 {
-				supportThreadURL := deeplink.ThreadURLShareable(s.webDomain, setupThread.OrganizationID, supportThread.ID.String())
+			if state.Step&stepTelemedicine == 0 {
 				msgBML = bml.BML{
-					`Interested in engaging patients digitally with virtual visits, video calls, care plans (including e-prescribing),`,
-					" mobile payment, appointment reminders, and satisfaction surveys?\n\n",
-					`Digital care on Spruce enables you to`,
-					` offer a standout patient experience and streamline your practice efficiency. The Digital Practice offering`,
-					` on Spruce is coming soon: message us in `, &bml.Anchor{HREF: supportThreadURL, Text: "Spruce Support"},
-					` if you would like to be a part of the private beta.`,
+					"✨ With Spruce’s Digital Practice plan you can provide care outside the exam room with video visits, Spruce visits (asynchronous clinical question sets), care plans and mobile billpay. It’s free to try for 30 days!\n\n",
+					"The best way to learn about Spruce’s telemedicine features is to experience them first hand. Fill out this quick survey so we can customize a test patient which will be added your account within 24 hours (or Monday if it's the weekend).\n\n",
+					&bml.Anchor{HREF: "https://sprucehealthsurvey.typeform.com/to/oY215t", Text: "✏  Fill out the survey for a test patient"}, "\n\n",
+					&bml.Anchor{HREF: "https://vimeo.com/179789289", Text: "📚  Check out this video to see telemedicine in action"},
 				}
-				newStepBit = 8
+				newStepBit = stepTelemedicine
 			}
 		default:
 			return nil, errors.Errorf("Unhandled onboarding setup event %q for org %s", in.Event, setupThread.OrganizationID)

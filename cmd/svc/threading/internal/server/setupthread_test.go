@@ -33,11 +33,18 @@ func TestCreateOnboardingThread(t *testing.T) {
 	test.OK(t, err)
 	sqid, err := models.NewSavedQueryID()
 	test.OK(t, err)
+	supportTID, err := models.NewThreadID()
+	test.OK(t, err)
+
+	dl.Expect(mock.NewExpectation(dl.ThreadsForOrg, "o1", models.ThreadTypeSupport, 1).WithReturns(
+		[]*models.Thread{
+			{ID: supportTID, Type: models.ThreadTypeSupport},
+		}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.CreateThread, &models.Thread{
 		OrganizationID:     "o1",
 		PrimaryEntityID:    "e2",
-		LastMessageSummary: "Setup: Welcome! You can access our setup guide here, at any time. In the meantime, how would you like to use Spruce? (You can tap on multiple options) Second phone line for calls and texts with patients, without disclosing your personal number. Automated answering service that transcribes urgent voicemails and notifies you. Secure team chat and care coordination. Digital care and telemedicine.",
+		LastMessageSummary: "Setup: 👋 Hi! Spruce can do many things to help you provide great care. To learn more about what Spruce can do for you, tap any item below and we’ll guide you through it...  📞 2nd phone line 💬 Patient messaging 👥 Team chat & care coordination ⚡ Telemedicine If you have questions at any time, just message us or check out our Knowledge Center.",
 		Type:               models.ThreadTypeSetup,
 	}).WithReturns(thid, nil))
 
@@ -47,8 +54,8 @@ func TestCreateOnboardingThread(t *testing.T) {
 		ThreadID:     thid,
 		FromEntityID: "e2",
 		Internal:     false,
-		Text:         "Welcome! You can access our <a href=\"https://help.sprucehealth.com\">setup guide here</a>, at any time. In the meantime, how would you like to use Spruce? (You can tap on multiple options)\n\n<a href=\"https://WEBDOMAIN/org/o1/settings/phone\">Second phone line</a> for calls and texts with patients, without disclosing your personal number.\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_answering_service&amp;org_id=o1&amp;refresh_thread=1\">Automated answering service</a> that transcribes urgent voicemails and notifies you.\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_team_messaging&amp;org_id=o1&amp;refresh_thread=1\">Secure team chat and care coordination</a>.\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_telemedicine&amp;org_id=o1&amp;refresh_thread=1\">Digital care and telemedicine</a>.",
-		Summary:      "Setup: Welcome! You can access our setup guide here, at any time. In the meantime, how would you like to use Spruce? (You can tap on multiple options) Second phone line for calls and texts with patients, without disclosing your personal number. Automated answering service that transcribes urgent voicemails and notifies you. Secure team chat and care coordination. Digital care and telemedicine.",
+		Text:         "👋 Hi! Spruce can do many things to help you provide great care. To learn more about what Spruce can do for you, tap any item below and we’ll guide you through it...\n\n <a href=\"https://WEBDOMAIN/post_event?name=setup_phone_line&amp;org_id=o1&amp;refresh_thread=1\">📞  2nd phone line</a>\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_patient_messaging&amp;org_id=o1&amp;refresh_thread=1\">💬  Patient messaging</a>\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_team_messaging&amp;org_id=o1&amp;refresh_thread=1\">👥  Team chat &amp; care coordination</a>\n\n<a href=\"https://WEBDOMAIN/post_event?name=setup_telemedicine&amp;org_id=o1&amp;refresh_thread=1\">⚡  Telemedicine</a>\n\nIf you have questions at any time, just <a href=\"https://WEBDOMAIN/org/o1/thread/" + supportTID.String() + "\">message us</a> or check out our <a href=\"https://help.sprucehealth.com\">Knowledge Center</a>.",
+		Summary:      "Setup: 👋 Hi! Spruce can do many things to help you provide great care. To learn more about what Spruce can do for you, tap any item below and we’ll guide you through it...  📞 2nd phone line 💬 Patient messaging 👥 Team chat & care coordination ⚡ Telemedicine If you have questions at any time, just message us or check out our Knowledge Center.",
 	}).WithReturns(&models.ThreadItem{}, nil))
 
 	dl.Expect(mock.NewExpectation(dl.CreateOnboardingState, thid, "o1").WithReturns(nil))
@@ -58,7 +65,7 @@ func TestCreateOnboardingThread(t *testing.T) {
 			ID:                   thid,
 			OrganizationID:       "o1",
 			PrimaryEntityID:      "e2",
-			LastMessageSummary:   "Setup: Welcome to Spruce! Let’s get you set up with your own Spruce phone number so you can start receiving calls, voicemails, and texts from patients without disclosing your personal number.\n\nGet your Spruce number\nor type \"Skip\" to get it later",
+			LastMessageSummary:   "Setup: 👋 Hi! Spruce can do many things to help you provide great care. To learn more about what Spruce can do for you, tap any item below and we’ll guide you through it...  📞 2nd phone line 💬 Patient messaging 👥 Team chat & care coordination ⚡ Telemedicine If you have questions at any time, just message us or check out our Knowledge Center.",
 			LastMessageTimestamp: now,
 			Created:              now,
 		},
@@ -109,7 +116,7 @@ func TestCreateOnboardingThread(t *testing.T) {
 			OrganizationID:       "o1",
 			PrimaryEntityID:      "e2",
 			LastMessageTimestamp: uint64(now.Unix()),
-			LastMessageSummary:   "Setup: Welcome to Spruce! Let’s get you set up with your own Spruce phone number so you can start receiving calls, voicemails, and texts from patients without disclosing your personal number.\n\nGet your Spruce number\nor type \"Skip\" to get it later",
+			LastMessageSummary:   "Setup: 👋 Hi! Spruce can do many things to help you provide great care. To learn more about what Spruce can do for you, tap any item below and we’ll guide you through it...  📞 2nd phone line 💬 Patient messaging 👥 Team chat & care coordination ⚡ Telemedicine If you have questions at any time, just message us or check out our Knowledge Center.",
 			CreatedTimestamp:     uint64(now.Unix()),
 			MessageCount:         0,
 		},
@@ -138,10 +145,10 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 			{ID: supportTID, Type: models.ThreadTypeSupport},
 		}, nil))
 	dl.Expect(mock.NewExpectation(dl.SetupThreadState, setupTID).WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 0}, nil))
-	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(1)}).WithReturns(nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(stepProvisionedPhoneNumber)}).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
-		Text:     "You can now use your Spruce number (415) 555-1212 for calls, texts, and voicemails with patients. Just message us in <a href=\"https://WEBDOMAIN/org/org/thread/" + supportTID.String() + "\">Spruce Support</a> if you have any questions or problems.",
-		Summary:  "Setup: You can now use your Spruce number (415) 555-1212 for calls, texts, and voicemails with patients. Just message us in Spruce Support if you have any questions or problems.",
+		Text:     "💥  (415) 555-1212 is your Spruce number.\n\nYou can start a new call anytime by tapping the ➕ and choosing “Dialpad”.\n\nTo access your Spruce Number settings, tap the icon in the upper left of the home screen and then tap your Spruce number.\n\nIf you’d like to learn more about using your Spruce number, visit our <a href=\"https://help.sprucehealth.com/hc/en-us/sections/202689223-Phone-Functionality\">phone guide</a> or <a href=\"https://WEBDOMAIN/org/org/thread/" + supportTID.String() + "\">message us</a>.",
+		Summary:  "Setup: 💥 (415) 555-1212 is your Spruce number. You can start a new call anytime by tapping the ➕ and choosing “Dialpad”. To access your Spruce Number settings, tap the icon in the upper left of the home screen and then tap your Spruce number. If you’d like to learn more about using your Spruce number, visit our phone guide or message us.",
 		ThreadID: setupTID,
 	}).WithReturns(&models.ThreadItem{}, nil))
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
@@ -195,7 +202,7 @@ func TestOnboardingThreadEvent_PROVISIONED_PHONE(t *testing.T) {
 	test.Equals(t, setupTID.String(), res.Thread.ID)
 }
 
-func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupAnsweringService(t *testing.T) {
+func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupPatientMessaging(t *testing.T) {
 	t.Parallel()
 	dl := dalmock.New(t)
 	defer dl.Finish()
@@ -217,10 +224,10 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupAnsweringService(t *testi
 			{ID: supportTID, Type: models.ThreadTypeSupport},
 		}, nil))
 	dl.Expect(mock.NewExpectation(dl.SetupThreadState, setupTID).WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 0}, nil))
-	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(2)}).WithReturns(nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(stepPatientMessaging)}).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
-		Text:     "As a paid feature your Spruce line can triage and transcribe patient voicemails, notifying you via text when an urgent voicemail is received. You can also add teammates to create an on-call rotation.\n\nTo do this, first <a href=\"https://WEBDOMAIN/org/org/settings/phone\">set up your Spruce number</a> if you haven’t already. Then tell us in <a href=\"https://WEBDOMAIN/org/org/thread/" + supportTID.String() + "\">Spruce Support</a> that you would like to enable the answering service feature.",
-		Summary:  "Setup: As a paid feature your Spruce line can triage and transcribe patient voicemails, notifying you via text when an urgent voicemail is received. You can also add teammates to create an on-call rotation. To do this, first set up your Spruce number if you haven’t already. Then tell us in Spruce Support that you would like to enable the answering service feature.",
+		Text:     "📱 Send and receive secure messages or standard SMS messages and emails (when appropriate). It’s free to try for 30 days!\n\n<a href=\"https://vimeo.com/183376736\">Check out this video overview</a> of the ins and outs of patient messaging on Spruce, then start a new patient conversation in a few easy steps:\n\n1. Return to the homescreen and tap the ➕ button2. Tap 👤 Patient Conversation3. Choose 🔒 Secure Conversations for conversations involving protected health information (PHI)4. Or choose 💬 Standard Conversations to send traditional SMS or email messages\n\nTo learn more about messaging patients using Spruce, <a href=\"https://help.sprucehealth.com/hc/en-us/articles/213827683-Understanding-Patient-Conversations\">check out this guide</a> we put together.",
+		Summary:  "Setup: 📱 Send and receive secure messages or standard SMS messages and emails (when appropriate). It’s free to try for 30 days! Check out this video overview of the ins and outs of patient messaging on Spruce, then start a new patient conversation in a few easy steps: 1. Return to the homescreen and tap the ➕ button2. Tap 👤 Patient Conversation3. Choose 🔒 Secure Conversations for conversations involving protected health information (PHI)4. Or choose 💬 Standard Conversations to send traditional SMS or email messages To learn more about messaging patients using Spruce, check out this guide we put together.",
 		ThreadID: setupTID,
 	}).WithReturns(&models.ThreadItem{}, nil))
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
@@ -237,7 +244,7 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupAnsweringService(t *testi
 		EventType: threading.ONBOARDING_THREAD_EVENT_TYPE_GENERIC_SETUP,
 		Event: &threading.OnboardingThreadEventRequest_GenericSetup{
 			GenericSetup: &threading.GenericSetupEvent{
-				Name: eventSetupAnsweringService,
+				Name: eventSetupPatientMessaging,
 			},
 		},
 	})
@@ -267,10 +274,10 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTeamMessaging(t *testing.
 			{ID: supportTID, Type: models.ThreadTypeSupport},
 		}, nil))
 	dl.Expect(mock.NewExpectation(dl.SetupThreadState, setupTID).WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 0}, nil))
-	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(4)}).WithReturns(nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(stepTeamMessaging)}).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
-		Text:     "After <a href=\"https://WEBDOMAIN/org/org/invite\">adding teammates</a>, you can start a new team conversation from the home screen and message 1:1 or in group chats.\n\nYou can also collaborate and make notes within patient conversations (patients won’t see this activity, but your teammates will).",
-		Summary:  "Setup: After adding teammates, you can start a new team conversation from the home screen and message 1:1 or in group chats. You can also collaborate and make notes within patient conversations (patients won’t see this activity, but your teammates will).",
+		Text:     "🙌 Spruce is built for teams! To invite a teammate to join your practice, tap the settings icon in the upper left of the home screen and then select <a href=\"https://WEBDOMAIN/org/org/invite\">Invite Teammates</a>.\n\nWhen you invite a teammate to join your Spruce organization you unlock:\n📥  A Shared Team Inbox - keep everyone in sync with one inbox that gives all teammates the ability to see and respond to incoming patient communication\n🔒  Secure Team Chats - coordinate care in a private team-only conversation\n📝  Internal Notes and @Pages - Tap ‘Internal’ to create “sticky notes” in patient conversations that are only visible to teammates. Use the ‘@’ sign to explicitly notify a teammate to something important\n\n<a href=\"https://vimeo.com/176232003\">See team chat in action</a> or <a href=\"https://help.sprucehealth.com/hc/en-us/sections/202692423-Team-Conversations\">visit our Knowledge Center</a> to learn more about adding teammates to your practice.",
+		Summary:  "Setup: 🙌 Spruce is built for teams! To invite a teammate to join your practice, tap the settings icon in the upper left of the home screen and then select Invite Teammates. When you invite a teammate to join your Spruce organization you unlock: 📥 A Shared Team Inbox - keep everyone in sync with one inbox that gives all teammates the ability to see and respond to incoming patient communication 🔒 Secure Team Chats - coordinate care in a private team-only conversation 📝 Internal Notes and @Pages - Tap ‘Internal’ to create “sticky notes” in patient conversations that are only visible to teammates. Use the ‘@’ sign to explicitly notify a teammate to something important See team chat in action or visit our Knowledge Center to learn more about adding teammates to your practice.",
 		ThreadID: setupTID,
 	}).WithReturns(&models.ThreadItem{}, nil))
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
@@ -316,10 +323,10 @@ func TestOnboardingThreadEvent_GENERIC_SETUP_eventSetupTelemedicine(t *testing.T
 			{ID: supportTID, Type: models.ThreadTypeSupport},
 		}, nil))
 	dl.Expect(mock.NewExpectation(dl.SetupThreadState, setupTID).WithReturns(&models.SetupThreadState{ThreadID: setupTID, Step: 0}, nil))
-	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(8)}).WithReturns(nil))
+	dl.Expect(mock.NewExpectation(dl.UpdateSetupThreadState, setupTID, &dal.SetupThreadStateUpdate{Step: ptr.Int(stepTelemedicine)}).WithReturns(nil))
 	dl.Expect(mock.NewExpectation(dl.PostMessage, &dal.PostMessageRequest{
-		Text:     "Interested in engaging patients digitally with virtual visits, video calls, care plans (including e-prescribing), mobile payment, appointment reminders, and satisfaction surveys?\n\nDigital care on Spruce enables you to offer a standout patient experience and streamline your practice efficiency. The Digital Practice offering on Spruce is coming soon: message us in <a href=\"https://WEBDOMAIN/org/org/thread/" + supportTID.String() + "\">Spruce Support</a> if you would like to be a part of the private beta.",
-		Summary:  "Setup: Interested in engaging patients digitally with virtual visits, video calls, care plans (including e-prescribing), mobile payment, appointment reminders, and satisfaction surveys? Digital care on Spruce enables you to offer a standout patient experience and streamline your practice efficiency. The Digital Practice offering on Spruce is coming soon: message us in Spruce Support if you would like to be a part of the private beta.",
+		Text:     "✨ With Spruce’s Digital Practice plan you can provide care outside the exam room with video visits, Spruce visits (asynchronous clinical question sets), care plans and mobile billpay. It’s free to try for 30 days!\n\nThe best way to learn about Spruce’s telemedicine features is to experience them first hand. Fill out this quick survey so we can customize a test patient which will be added your account within 24 hours (or Monday if it&#39;s the weekend).\n\n<a href=\"https://sprucehealthsurvey.typeform.com/to/oY215t\">✏  Fill out the survey for a test patient</a>\n\n<a href=\"https://vimeo.com/179789289\">📚  Check out this video to see telemedicine in action</a>",
+		Summary:  "Setup: ✨ With Spruce’s Digital Practice plan you can provide care outside the exam room with video visits, Spruce visits (asynchronous clinical question sets), care plans and mobile billpay. It’s free to try for 30 days! The best way to learn about Spruce’s telemedicine features is to experience them first hand. Fill out this quick survey so we can customize a test patient which will be added your account within 24 hours (or Monday if it's the weekend). ✏ Fill out the survey for a test patient 📚 Check out this video to see telemedicine in action",
 		ThreadID: setupTID,
 	}).WithReturns(&models.ThreadItem{}, nil))
 	dl.Expect(mock.NewExpectation(dl.Threads, []models.ThreadID{setupTID}).WithReturns([]*models.Thread{{ID: setupTID, OrganizationID: "org"}}, nil))
