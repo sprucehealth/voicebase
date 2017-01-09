@@ -42,12 +42,11 @@ func getNodeSettings(ctx context.Context, settingsClient settings.SettingsClient
 
 // modifySettingInput
 type modifySettingInput struct {
-	NodeID         string   `gql:"nodeID"`
-	Key            string   `gql:"key"`
-	Subkey         string   `gql:"subkey"`
-	SubkeyRequired bool     `gql:"subkeyRequired"`
-	Value          string   `gql:"value"`
-	Values         []string `gql:"values"`
+	NodeID string   `gql:"nodeID"`
+	Key    string   `gql:"key"`
+	Subkey string   `gql:"subkey"`
+	Value  string   `gql:"value"`
+	Values []string `gql:"values"`
 }
 
 var modifySettingInputType = graphql.NewInputObject(

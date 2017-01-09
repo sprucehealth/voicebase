@@ -176,7 +176,7 @@ TIME=$(date)
 export TAG="$BRANCH-$BUILD_NUMBER"
 
 if [[ "$DEPLOY_TO_S3" != "" ]]; then
-    SVCS="auth baymaxgraphql curbside directory excomms invite notification restapi routing threading settings operational deploy layout care media admin payments patientsync"
+    SVCS="auth baymaxgraphql curbside directory excomms invite notification restapi routing threading settings operational deploy layout care media admin payments patientsync scheduling"
     for SVC in $SVCS; do
         echo "BUILDING ($SVC)"
         cd $MONOREPO_PATH/cmd/svc/$SVC

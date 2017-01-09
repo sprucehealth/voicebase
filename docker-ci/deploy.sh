@@ -19,6 +19,7 @@ devDeployableMap["media"]="deployable_0EM1LSDHG0O00,deployable_0EP10F1PG0O00"
 devDeployableMap["admin"]="deployable_0FRP18V1G0O00"
 devDeployableMap["payments"]="deployable_0G6QO9CUO0O00"
 devDeployableMap["patientsync"]="deployable_0GGFHCRPO0O00,deployable_0GGFI5HIO0O00"
+devDeployableMap["scheduling"]="deployable_0J5FPR4C00O00"
 
 echo "Pushing images for revision: $GIT_REV"
 # Tag any generated images with the remote repo and push
