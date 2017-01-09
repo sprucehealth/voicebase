@@ -238,9 +238,9 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				msgBML = bml.BML{
 					"📱 Send and receive secure messages or standard SMS messages and emails (when appropriate). It’s free to try for 30 days!\n\n",
 					&bml.Anchor{HREF: "https://vimeo.com/183376736", Text: "Check out this video overview"}, " of the ins and outs of patient messaging on Spruce, then start a new patient conversation in a few easy steps:\n\n",
-					"1. Return to the homescreen and tap the ➕ button",
-					"2. Tap 👤 Patient Conversation",
-					"3. Choose 🔒 Secure Conversations for conversations involving protected health information (PHI)",
+					"1. Return to the homescreen and tap the ➕ button\n",
+					"2. Tap 👤 Patient Conversation\n",
+					"3. Choose 🔒 Secure Conversations for conversations involving protected health information (PHI)\n",
 					"4. Or choose 💬 Standard Conversations to send traditional SMS or email messages\n\n",
 					"To learn more about messaging patients using Spruce, ", &bml.Anchor{HREF: "https://help.sprucehealth.com/hc/en-us/articles/213827683-Understanding-Patient-Conversations", Text: "check out this guide"}, " we put together.",
 				}
