@@ -170,10 +170,10 @@ func configureWebhook() {
 				return errors.Trace(err)
 			}
 			resp, err := http.DefaultClient.Post(config.slackWebhook, "application/json", bytes.NewReader(data))
-			defer resp.Body.Close()
 			if err != nil {
 				return errors.Trace(err)
 			}
+			defer resp.Body.Close()
 			if resp.StatusCode != http.StatusOK {
 				d, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
