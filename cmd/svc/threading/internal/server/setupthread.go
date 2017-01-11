@@ -80,7 +80,7 @@ func (s *threadsServer) CreateOnboardingThread(ctx context.Context, in *threadin
 		"If you have questions at any time, just ",
 		&bml.Anchor{HREF: supportThreadURL, Text: "message us"},
 		" or check out our ",
-		&bml.Anchor{HREF: "https://help.sprucehealth.com", Text: "Knowledge Center"}, ".",
+		&bml.Anchor{HREF: "https://intercom.help/spruce", Text: "Knowledge Center"}, ".",
 	}
 	msg, err := msgBML.Format()
 	if err != nil {
@@ -200,7 +200,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				"You can start a new call anytime by tapping the ➕ and choosing “Dialpad”.\n\n",
 				"To access your Spruce Number settings, tap the icon in the upper left of the home screen and then tap your Spruce number.\n\n",
 				"If you’d like to learn more about using your Spruce number, visit our ",
-				&bml.Anchor{HREF: "https://help.sprucehealth.com/hc/en-us/sections/202689223-Phone-Functionality", Text: "phone guide"},
+				&bml.Anchor{HREF: "https://intercom.help/spruce/your-professional-phone-number", Text: "phone guide"},
 				" or ", &bml.Anchor{HREF: supportThreadURL, Text: "message us"}, ".",
 			}
 			newStepBit = stepProvisionedPhoneNumber
@@ -228,7 +228,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 					"Create a second phone line to make calls to your patients without disclosing your personal number.\n\n",
 					&bml.Anchor{HREF: phoneSetupURL, Text: "☎  Claim your Spruce Number now"}, "\n\n",
 					"or...\n\n",
-					&bml.Anchor{HREF: "https://help.sprucehealth.com/hc/en-us/articles/210312806-Making-Calls", Text: "📖 Learn more about how it works"},
+					&bml.Anchor{HREF: "https://intercom.help/spruce/your-professional-phone-number/phone-basics/setting-up-your-spruce-number", Text: "📖 Learn more about how it works"},
 				}
 				newStepBit = stepPhoneLine
 			}
@@ -242,7 +242,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 					"2. Tap 👤 Patient Conversation\n",
 					"3. Choose 🔒 Secure Conversations for conversations involving protected health information (PHI)\n",
 					"4. Or choose 💬 Standard Conversations to send traditional SMS or email messages\n\n",
-					"To learn more about messaging patients using Spruce, ", &bml.Anchor{HREF: "https://help.sprucehealth.com/hc/en-us/articles/213827683-Understanding-Patient-Conversations", Text: "check out this guide"}, " we put together.",
+					"To learn more about messaging patients using Spruce, ", &bml.Anchor{HREF: "https://intercom.help/spruce/getting-started-with-spruce/quick-set-up-guides/patient-conversation-basics", Text: "check out this guide"}, " we put together.",
 				}
 				newStepBit = stepPatientMessaging
 			}
@@ -255,7 +255,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 					"📥  A Shared Team Inbox - keep everyone in sync with one inbox that gives all teammates the ability to see and respond to incoming patient communication\n",
 					"🔒  Secure Team Chats - coordinate care in a private team-only conversation\n",
 					"📝  Internal Notes and @Pages - Tap ‘Internal’ to create “sticky notes” in patient conversations that are only visible to teammates. Use the ‘@’ sign to explicitly notify a teammate to something important\n\n",
-					&bml.Anchor{HREF: "https://vimeo.com/176232003", Text: "See team chat in action"}, " or ", &bml.Anchor{HREF: "https://help.sprucehealth.com/hc/en-us/sections/202692423-Team-Conversations", Text: "visit our Knowledge Center"},
+					&bml.Anchor{HREF: "https://vimeo.com/176232003", Text: "See team chat in action"}, " or ", &bml.Anchor{HREF: "https://intercom.help/spruce/getting-started-with-spruce/quick-set-up-guides/inviting-teammates", Text: "visit our Knowledge Center"},
 					" to learn more about adding teammates to your practice.",
 				}
 				newStepBit = stepTeamMessaging
