@@ -133,7 +133,7 @@ func TransformTriggeredMessageItemToModel(tmi *threading.TriggeredMessageItem) *
 
 // Message represents a threading service message
 type Message struct {
-	Text         string        `json:"summary"`
+	Text         string        `json:"text"`
 	Title        string        `json:"title"`
 	Summary      string        `json:"summary"`
 	Attachments  []*Attachment `json:"attachments"`

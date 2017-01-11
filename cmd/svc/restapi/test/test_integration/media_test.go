@@ -70,10 +70,10 @@ func TestMediaUpload(t *testing.T) {
 	mediaURL = strings.Replace(mediaURL, "example.com", ur.Host, -1)
 
 	linkData, err := http.Get(mediaURL)
-	defer linkData.Body.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer linkData.Body.Close()
 	fileContents, err := ioutil.ReadAll(linkData.Body)
 	if err != nil {
 		t.Fatal(err)

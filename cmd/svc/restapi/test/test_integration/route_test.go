@@ -73,6 +73,7 @@ func runTestQuery(registeredPath, testQuery string, testData *TestData, t *testi
 	req, err = http.NewRequest(allowableMethods[0], testData.APIServer.URL+registeredPath+testQuery, nil)
 	test.OK(t, err)
 	res, err = http.DefaultClient.Do(req)
+	test.OK(t, err)
 	defer res.Body.Close()
 
 	jsonResponse := result{}

@@ -27,11 +27,11 @@ func TestPhotoUpload(t *testing.T) {
 	photoURL = strings.Replace(photoURL, "example.com", ur.Host, -1)
 
 	linkData, err := http.Get(photoURL)
-	defer linkData.Body.Close()
-
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer linkData.Body.Close()
+
 	fileContents, err := ioutil.ReadAll(linkData.Body)
 	if err != nil {
 		t.Fatal(err)
