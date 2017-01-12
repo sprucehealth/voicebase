@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -291,6 +292,21 @@ var invitePatientsMutation = &graphql.Field{
 					}
 					pat.ParkedEntityID = patientEntity.ID
 
+					var tags []string
+					val, err := settings.GetStringListValue(ctx, svc.settings, &settings.GetValuesRequest{
+						NodeID: inviterEnt.ID,
+						Keys: []*settings.ConfigKey{
+							{
+								Key: baymaxgraphqlsettings.ConfigKeyTagsForNewPatientConversations,
+							},
+						},
+					})
+					if err != nil {
+						golog.Errorf("Unable to query settings for entity %s for key %s: %s", inviterEnt.ID, baymaxgraphqlsettings.ConfigKeyTagsForNewPatientConversations, err)
+					} else {
+						tags = val.Values
+					}
+
 					// Create a thread with the parked patient in the org
 					thread, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
 						OrganizationID:  orgID,
@@ -300,6 +316,7 @@ var invitePatientsMutation = &graphql.Field{
 						Summary:         patientEntity.Info.DisplayName,
 						SystemTitle:     patientEntity.Info.DisplayName,
 						Origin:          threading.THREAD_ORIGIN_PATIENT_INVITE,
+						Tags:            tags,
 					})
 					if err != nil {
 						return nil, errors.InternalError(ctx, err)

@@ -6,11 +6,13 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -85,6 +87,25 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 		},
 	}, nil))
 
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.GetValues, &settings.GetValuesRequest{
+		NodeID: "e_creator",
+		Keys: []*settings.ConfigKey{
+			{
+				Key: baymaxgraphqlsettings.ConfigKeyTagsForNewPatientConversations,
+			},
+		},
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{"test"},
+					},
+				},
+			},
+		},
+	}, nil))
+
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
 		UUID:            "zztop",
 		OrganizationID:  "e_org",
@@ -94,6 +115,7 @@ func TestCreateThreadMutation_NoExistingThreads(t *testing.T) {
 		Summary:         "New conversation",
 		SystemTitle:     "firstName middleInitial. lastName, shortTitle",
 		Type:            threading.THREAD_TYPE_EXTERNAL,
+		Tags:            []string{"test"},
 	}).WithReturns(&threading.Thread{
 		ID:              "t_1",
 		PrimaryEntityID: "e_patient",
@@ -235,6 +257,25 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 		},
 	}, nil))
 
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.GetValues, &settings.GetValuesRequest{
+		NodeID: "e_creator",
+		Keys: []*settings.ConfigKey{
+			{
+				Key: baymaxgraphqlsettings.ConfigKeyTagsForNewPatientConversations,
+			},
+		},
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{"test"},
+					},
+				},
+			},
+		},
+	}, nil))
+
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
 		UUID:            "zztop",
 		OrganizationID:  "e_org",
@@ -244,6 +285,7 @@ func TestCreateThreadMutation_DifferentOrg(t *testing.T) {
 		PrimaryEntityID: "e_patient",
 		Summary:         "New conversation",
 		Type:            threading.THREAD_TYPE_EXTERNAL,
+		Tags:            []string{"test"},
 	}).WithReturns(&threading.Thread{
 		ID:              "t_1",
 		Type:            threading.THREAD_TYPE_EXTERNAL,

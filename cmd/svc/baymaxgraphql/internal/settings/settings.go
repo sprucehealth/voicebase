@@ -1,18 +1,22 @@
 package settings
 
-import "github.com/sprucehealth/backend/svc/settings"
+import (
+	"github.com/sprucehealth/backend/svc/settings"
+	"github.com/sprucehealth/backend/svc/threading"
+)
 
 const (
-	ConfigKeyCarePlans                = "care_plans_enabled"
-	ConfigKeyCreateSecureThread       = "secure_threads_enabled"
-	ConfigKeyFilteredTabsInInbox      = "filtered_tabs_in_inbox"
-	ConfigKeyShakeToMarkThreadsAsRead = "shake_to_mark_threads_read"
-	ConfigKeyTeamConversations        = "team_conversations_enabled"
-	ConfigKeyVideoCalling             = "video_calling_enabled"
-	ConfigKeyVisitAttachments         = "visit_attachments_enabled"
-	ConfigKeyPayments                 = "payments_enabled"
-	ConfigKeyScheduledMessages        = "scheduled_messages_enabled"
-	ConfigKeyPatientInitiatedVisits   = "patient_initiated_vistis"
+	ConfigKeyCarePlans                      = "care_plans_enabled"
+	ConfigKeyCreateSecureThread             = "secure_threads_enabled"
+	ConfigKeyFilteredTabsInInbox            = "filtered_tabs_in_inbox"
+	ConfigKeyShakeToMarkThreadsAsRead       = "shake_to_mark_threads_read"
+	ConfigKeyTeamConversations              = "team_conversations_enabled"
+	ConfigKeyVideoCalling                   = "video_calling_enabled"
+	ConfigKeyVisitAttachments               = "visit_attachments_enabled"
+	ConfigKeyPayments                       = "payments_enabled"
+	ConfigKeyScheduledMessages              = "scheduled_messages_enabled"
+	ConfigKeyPatientInitiatedVisits         = "patient_initiated_vistis"
+	ConfigKeyTagsForNewPatientConversations = "tags_for_new_patient_conversations"
 )
 
 // TeamConversationsConfig represents the config controlling whether or not team conversations is enabled at the org level
@@ -176,6 +180,26 @@ var PatientInitiatedVisitsConfig = &settings.Config{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
 				Value: false,
+			},
+		},
+	},
+}
+
+// TagsForNewPatientConversationsConfig represents the config specifying what tags to
+// automatically apply to new patient conversations that providers create.
+var TagsForNewPatientConversationsConfig = &settings.Config{
+	Title:          "Tags applied to patient conversations that a provider creates",
+	Key:            ConfigKeyTagsForNewPatientConversations,
+	AllowSubkeys:   false,
+	Type:           settings.ConfigType_STRING_LIST,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_INTERNAL_ENTITY},
+	OptionalValue:  true,
+	Config: &settings.Config_StringList{
+		StringList: &settings.StringListConfig{
+			Requirements: &settings.StringListRequirements{
+				TextRequirements: &settings.TextRequirements{
+					MatchRegexp: threading.RegexpValidTag,
+				},
 			},
 		},
 	},

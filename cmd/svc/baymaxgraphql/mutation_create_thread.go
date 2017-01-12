@@ -8,10 +8,13 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
+
 	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
 	"google.golang.org/grpc"
@@ -89,6 +92,7 @@ var createThreadMutation = &graphql.Field{
 		ram := raccess.ResourceAccess(p)
 		ctx := p.Context
 		acc := gqlctx.Account(ctx)
+		svc := serviceFromParams(p)
 		if acc == nil {
 			return nil, errors.ErrNotAuthenticated(ctx)
 		}
@@ -280,6 +284,21 @@ var createThreadMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
+		var tags []string
+		val, err := settings.GetStringListValue(ctx, svc.settings, &settings.GetValuesRequest{
+			NodeID: creatorEnt.ID,
+			Keys: []*settings.ConfigKey{
+				{
+					Key: baymaxgraphqlsettings.ConfigKeyTagsForNewPatientConversations,
+				},
+			},
+		})
+		if err != nil {
+			golog.Errorf("Unable to query settings for entity %s for key %s: %s", creatorEnt.ID, baymaxgraphqlsettings.ConfigKeyTagsForNewPatientConversations, err)
+		} else {
+			tags = val.Values
+		}
+
 		thread, err := ram.CreateEmptyThread(ctx, &threading.CreateEmptyThreadRequest{
 			UUID:            uuid,
 			OrganizationID:  orgID,
@@ -289,6 +308,7 @@ var createThreadMutation = &graphql.Field{
 			Summary:         "New conversation",
 			Type:            threading.THREAD_TYPE_EXTERNAL,
 			SystemTitle:     primaryEnt.Info.DisplayName,
+			Tags:            tags,
 		})
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)

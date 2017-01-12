@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
+	baymaxgraphqlsettings "github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/settings"
 	"github.com/sprucehealth/backend/device"
 	"github.com/sprucehealth/backend/device/devicectx"
 	"github.com/sprucehealth/backend/libs/test"
@@ -117,6 +118,25 @@ func TestInvitePatients_RequirePhoneAndEmail(t *testing.T) {
 		},
 	}).WithReturns(patientEntity, nil))
 
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.GetValues, &settings.GetValuesRequest{
+		NodeID: "entID",
+		Keys: []*settings.ConfigKey{
+			{
+				Key: baymaxgraphqlsettings.ConfigKeyTagsForNewPatientConversations,
+			},
+		},
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{"test"},
+					},
+				},
+			},
+		},
+	}, nil))
+
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
 		OrganizationID:  orgID,
 		PrimaryEntityID: parkedEntityID,
@@ -125,6 +145,7 @@ func TestInvitePatients_RequirePhoneAndEmail(t *testing.T) {
 		Summary:         "firstName lastName",
 		SystemTitle:     "firstName lastName",
 		Origin:          threading.THREAD_ORIGIN_PATIENT_INVITE,
+		Tags:            []string{"test"},
 	}).WithReturns(&threading.Thread{
 		ID:              "thread_id",
 		PrimaryEntityID: parkedEntityID,
@@ -286,6 +307,25 @@ func TestInvitePatients_Phone(t *testing.T) {
 		},
 	}).WithReturns(patientEntity, nil))
 
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.GetValues, &settings.GetValuesRequest{
+		NodeID: "entID",
+		Keys: []*settings.ConfigKey{
+			{
+				Key: baymaxgraphqlsettings.ConfigKeyTagsForNewPatientConversations,
+			},
+		},
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{"test"},
+					},
+				},
+			},
+		},
+	}, nil))
+
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
 		OrganizationID:  orgID,
 		PrimaryEntityID: parkedEntityID,
@@ -294,6 +334,7 @@ func TestInvitePatients_Phone(t *testing.T) {
 		Summary:         "firstName lastName",
 		SystemTitle:     "firstName lastName",
 		Origin:          threading.THREAD_ORIGIN_PATIENT_INVITE,
+		Tags:            []string{"test"},
 	}).WithReturns(&threading.Thread{
 		ID:              "thread_id",
 		PrimaryEntityID: parkedEntityID,
@@ -453,6 +494,25 @@ func TestInvitePatients_Email(t *testing.T) {
 		},
 	}).WithReturns(patientEntity, nil))
 
+	g.settingsC.Expect(mock.NewExpectation(g.settingsC.GetValues, &settings.GetValuesRequest{
+		NodeID: "entID",
+		Keys: []*settings.ConfigKey{
+			{
+				Key: baymaxgraphqlsettings.ConfigKeyTagsForNewPatientConversations,
+			},
+		},
+	}).WithReturns(&settings.GetValuesResponse{
+		Values: []*settings.Value{
+			{
+				Value: &settings.Value_StringList{
+					StringList: &settings.StringListValue{
+						Values: []string{"test"},
+					},
+				},
+			},
+		},
+	}, nil))
+
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEmptyThread, &threading.CreateEmptyThreadRequest{
 		OrganizationID:  orgID,
 		PrimaryEntityID: parkedEntityID,
@@ -461,6 +521,7 @@ func TestInvitePatients_Email(t *testing.T) {
 		Summary:         "firstName lastName",
 		SystemTitle:     "firstName lastName",
 		Origin:          threading.THREAD_ORIGIN_PATIENT_INVITE,
+		Tags:            []string{"test"},
 	}).WithReturns(&threading.Thread{
 		ID:              "thread_id",
 		PrimaryEntityID: parkedEntityID,
