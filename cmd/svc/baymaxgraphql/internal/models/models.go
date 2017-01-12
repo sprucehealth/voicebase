@@ -260,6 +260,10 @@ type Thread struct {
 	Tags                       []string `json:"tags"`
 }
 
+type ThreadTagList struct {
+	Items []string `json:"items"`
+}
+
 type ThreadItem struct {
 	ID                string      `json:"id"`
 	UUID              string      `json:"uuid,omitempty"`

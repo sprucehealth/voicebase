@@ -8,6 +8,13 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
+func (m *resourceAccessor) Tags(ctx context.Context, req *threading.TagsRequest) (*threading.TagsResponse, error) {
+	if err := m.canAccessResource(ctx, req.OrganizationID, m.orgsForOrganization); err != nil {
+		return nil, err
+	}
+	return m.threading.Tags(ctx, req)
+}
+
 // Saved Messages
 func (m *resourceAccessor) CreateSavedMessage(ctx context.Context, orgID string, req *threading.CreateSavedMessageRequest) (*threading.CreateSavedMessageResponse, error) {
 	if err := m.canAccessResource(ctx, orgID, m.orgsForOrganization); err != nil {

@@ -7,6 +7,15 @@ import (
 	"github.com/sprucehealth/backend/svc/threading"
 )
 
+func (m *ResourceAccessor) Tags(ctx context.Context, req *threading.TagsRequest) (*threading.TagsResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+
+	return rets[0].(*threading.TagsResponse), mock.SafeError(rets[1])
+}
+
 func (m *ResourceAccessor) CreateSavedMessage(ctx context.Context, orgID string, req *threading.CreateSavedMessageRequest) (*threading.CreateSavedMessageResponse, error) {
 	rets := m.Record(orgID, req)
 	if len(rets) == 0 {

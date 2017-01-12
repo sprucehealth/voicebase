@@ -154,6 +154,7 @@ type ResourceAccessor interface {
 	SubmitCarePlan(ctx context.Context, cp *care.CarePlan, parentID string) error
 	UpdateCarePlan(ctx context.Context, cp *care.CarePlan, req *care.UpdateCarePlanRequest) (*care.CarePlan, error)
 	SubmitVisit(ctx context.Context, req *care.SubmitVisitRequest) (*care.SubmitVisitResponse, error)
+	Tags(ctx context.Context, req *threading.TagsRequest) (*threading.TagsResponse, error)
 	Thread(ctx context.Context, threadID, viewerEntityID string) (*threading.Thread, error)
 	Threads(ctx context.Context, req *threading.ThreadsRequest) (*threading.ThreadsResponse, error)
 	ThreadItem(ctx context.Context, threadItemID string) (*threading.ThreadItem, error)

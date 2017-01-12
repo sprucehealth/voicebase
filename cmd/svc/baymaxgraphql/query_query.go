@@ -192,6 +192,7 @@ var queryType = graphql.NewObject(
 			"visitAutocompleteSearch":               visitAutocompleteSearchQuery,
 			"patientInitiatedVisitDrafts":           patientInitiatedVisitDraftsQuery,
 			"visitLayoutsForPatientInitiatedVisits": visitLayoutsForPatientInitiatedVisitsQuery,
+			"threadTags":                            threadTagsQuery,
 		},
 	},
 )
