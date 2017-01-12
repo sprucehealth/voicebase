@@ -79,12 +79,16 @@ func printObject(w io.Writer, t *Type) error {
 			return err
 		}
 	}
-	sort.Sort(typesName(t.Interfaces))
 	if _, err := fmt.Fprintf(w, "type %s", *t.Name); err != nil {
 		return err
 	}
-	for _, in := range t.Interfaces {
-		if _, err := fmt.Fprintf(w, " : %s", *in.Name); err != nil {
+	sort.Sort(typesName(t.Interfaces))
+	if len(t.Interfaces) != 0 {
+		ifs := make([]string, len(t.Interfaces))
+		for i, in := range t.Interfaces {
+			ifs[i] = *in.Name
+		}
+		if _, err := fmt.Fprintf(w, " implements %s", strings.Join(ifs, ", ")); err != nil {
 			return err
 		}
 	}
@@ -214,7 +218,30 @@ func printInterface(w io.Writer, t *Type) error {
 func printDeprecation(w io.Writer, reason *string) error {
 	var err error
 	if reason != nil && *reason != "" {
-		_, err = fmt.Fprintf(w, "\t# DEPRECATED: %s\n", *reason)
+		res := strings.TrimSpace(*reason)
+		if len(res) <= 100 {
+			if _, err := fmt.Fprintf(w, "\t# DEPRECATED: %s\n", res); err != nil {
+				return err
+			}
+		} else {
+			var lines []string
+			for _, res := range strings.Split(res, "\n") {
+				for len(res) > 100 {
+					ix := strings.LastIndex(res[:100], " ")
+					if ix <= 0 {
+						ix = 100
+					}
+					lines = append(lines, strings.TrimSpace(res[:ix]))
+					res = strings.TrimSpace(res[ix+1:])
+				}
+				if len(res) != 0 {
+					lines = append(lines, res)
+				}
+			}
+			if _, err := fmt.Fprintf(w, "\t# DEPRECATED: %s\n", strings.Join(lines, "\n\t#             ")); err != nil {
+				return err
+			}
+		}
 	} else {
 		_, err = fmt.Fprintln(w, "\t# DEPRECATED")
 	}
