@@ -197,8 +197,11 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 			}
 			msgBML = bml.BML{
 				`💥  ` + prettyPhone + " is your Spruce number.\n\n",
-				"You can start a new call anytime by tapping the ➕ and choosing “Dialpad”.\n\n",
-				"To access your Spruce Number settings, tap the icon in the upper left of the home screen and then tap your Spruce number.\n\n",
+				"To place a call from you Spruce number:\n",
+				"1. Return to the home screen and press the ➕  button\n",
+				"2. Select ‘Dialpad’\n",
+				"3. Enter the number you’d like to call or select a number from your phone's contacts\n",
+				"To manage your Spruce number return to the home screen, tap the settings icon and select your number from the menu.\n\n",
 				"If you’d like to learn more about using your Spruce number, visit our ",
 				&bml.Anchor{HREF: "https://intercom.help/spruce/your-professional-phone-number", Text: "phone guide"},
 				" or ", &bml.Anchor{HREF: supportThreadURL, Text: "message us"}, ".",
@@ -226,7 +229,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				phoneSetupURL := deeplink.OrgSettingsPhoneURL(s.webDomain, setupThread.OrganizationID)
 				msgBML = bml.BML{
 					"Create a second phone line to make calls to your patients without disclosing your personal number.\n\n",
-					&bml.Anchor{HREF: phoneSetupURL, Text: "☎  Claim your Spruce Number now"}, "\n\n",
+					&bml.Anchor{HREF: phoneSetupURL, Text: "📱  Claim your Spruce Number now"}, "\n\n",
 					"or...\n\n",
 					&bml.Anchor{HREF: "https://intercom.help/spruce/your-professional-phone-number/phone-basics/setting-up-your-spruce-number", Text: "📖 Learn more about how it works"},
 				}
@@ -236,10 +239,10 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 		case eventSetupPatientMessaging:
 			if state.Step&stepPatientMessaging == 0 {
 				msgBML = bml.BML{
-					"📱 Send and receive secure messages or standard SMS messages and emails (when appropriate). It’s free to try for 30 days!\n\n",
+					"Send and receive secure messages or standard SMS messages and emails (when appropriate). It’s free to try for 30 days!\n\n",
 					&bml.Anchor{HREF: "https://vimeo.com/183376736", Text: "Check out this video overview"}, " of the ins and outs of patient messaging on Spruce, then start a new patient conversation in a few easy steps:\n\n",
-					"1. Return to the homescreen and tap the ➕ button\n",
-					"2. Tap 👤 Patient Conversation\n",
+					"1. Return to the home screen and press the ➕ button\n",
+					"2. Select 👤 Patient Conversation\n",
 					"3. Choose 🔒 Secure Conversations for conversations involving protected health information (PHI)\n",
 					"4. Or choose 💬 Standard Conversations to send traditional SMS or email messages\n\n",
 					"To learn more about messaging patients using Spruce, ", &bml.Anchor{HREF: "https://intercom.help/spruce/getting-started-with-spruce/quick-set-up-guides/patient-conversation-basics", Text: "check out this guide"}, " we put together.",
@@ -250,7 +253,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 			if state.Step&stepTeamMessaging == 0 {
 				inviteURL := deeplink.OrgColleagueInviteURL(s.webDomain, setupThread.OrganizationID)
 				msgBML = bml.BML{
-					"🙌 Spruce is built for teams! To invite a teammate to join your practice, tap the settings icon in the upper left of the home screen and then select ", &bml.Anchor{HREF: inviteURL, Text: "Invite Teammates"}, ".\n\n",
+					"🙌 Spruce is built for teams! To invite a teammate to join your practice, return to the home screen, tap the settings icon and select ", &bml.Anchor{HREF: inviteURL, Text: "Invite Teammates"}, ".\n\n",
 					"When you invite a teammate to join your Spruce organization you unlock:\n",
 					"📥  A Shared Team Inbox - keep everyone in sync with one inbox that gives all teammates the ability to see and respond to incoming patient communication\n",
 					"🔒  Secure Team Chats - coordinate care in a private team-only conversation\n",
@@ -265,7 +268,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				msgBML = bml.BML{
 					"✨ With Spruce’s Digital Practice plan you can provide care outside the exam room with video visits, Spruce visits (asynchronous clinical question sets), care plans and mobile billpay. It’s free to try for 30 days!\n\n",
 					"The best way to learn about Spruce’s telemedicine features is to experience them first hand. Fill out this quick survey so we can customize a test patient which will be added your account within 24 hours (or Monday if it's the weekend).\n\n",
-					&bml.Anchor{HREF: "https://sprucehealthsurvey.typeform.com/to/oY215t", Text: "✏  Fill out the survey for a test patient"}, "\n\n",
+					&bml.Anchor{HREF: "https://sprucehealthsurvey.typeform.com/to/oY215t", Text: "✍  Fill out the survey for a test patient"}, "\n\n",
 					&bml.Anchor{HREF: "https://vimeo.com/179789289", Text: "📚  Check out this video to see telemedicine in action"},
 				}
 				newStepBit = stepTelemedicine
