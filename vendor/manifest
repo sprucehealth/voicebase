@@ -2,6 +2,141 @@
 	"version": 0,
 	"dependencies": [
 		{
+			"importpath": "github.com/aws/aws-sdk-go/aws",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "aws",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/aws/aws-sdk-go/private/protocol",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "private/protocol",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/aws/aws-sdk-go/private/waiter",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "private/waiter",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/aws/aws-sdk-go/service/cloudwatchlogs",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "/service/cloudwatchlogs",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/aws/aws-sdk-go/service/dynamodb",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "/service/dynamodb",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/aws/aws-sdk-go/service/ecr",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "/service/ecr",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/aws/aws-sdk-go/service/ecs",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "/service/ecs",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/aws/aws-sdk-go/service/firehose",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "/service/firehose",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/aws/aws-sdk-go/service/kms",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "service/kms",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/aws/aws-sdk-go/service/s3",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "/service/s3",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/aws/aws-sdk-go/service/sns",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "/service/sns",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/aws/aws-sdk-go/service/sqs",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "/service/sqs",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/aws/aws-sdk-go/service/sts",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "service/sts",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/aws/aws-sdk-go/vendor/github.com/go-ini/ini",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "vendor/github.com/go-ini/ini",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/aws/aws-sdk-go/vendor/github.com/jmespath/go-jmespath",
+			"repository": "https://github.com/aws/aws-sdk-go",
+			"vcs": "git",
+			"revision": "5e1afe1c0a077fb2da9b5f74232b790d99397ce8",
+			"branch": "master",
+			"path": "vendor/github.com/jmespath/go-jmespath",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/gogo/protobuf/gogoproto",
 			"repository": "https://github.com/gogo/protobuf",
 			"vcs": "git",
