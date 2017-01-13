@@ -332,9 +332,8 @@ var attachmentType = graphql.NewObject(
 		Name: "Attachment",
 		Fields: graphql.Fields{
 			"id": &graphql.Field{
-				Type: graphql.NewNonNull(graphql.ID),
-				DeprecationReason: `Use attachment.dataID instead if you are looking for the ID of the data contained within the attachment. attacment.id will have _attachment appended to ensure
-				that the attachment id is not the same as the data contained within it.`,
+				Type:              graphql.NewNonNull(graphql.ID),
+				DeprecationReason: `Use attachment.dataID instead if you are looking for the ID of the data contained within the attachment. attacment.id will have _attachment appended to ensure that the attachment id is not the same as the data contained within it.`,
 			},
 			"dataID":        &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 			"type":          &graphql.Field{Type: graphql.NewNonNull(attachmentInputTypeEnum)},

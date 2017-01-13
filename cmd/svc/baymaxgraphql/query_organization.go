@@ -315,7 +315,7 @@ var organizationType = graphql.NewObject(
 			"patientInviteURL": &graphql.Field{
 				Type:              graphql.String,
 				Resolve:           func(p graphql.ResolveParams) (interface{}, error) { return "", nil },
-				DeprecationReason: "DEPRECATED due to practice links becoming plural per org. Use `practiceLinks` when it becomes available",
+				DeprecationReason: "Deprecated due to practice links becoming plural per org. Use practiceLinks when it becomes available",
 			},
 			"partnerIntegrations": &graphql.Field{
 				Type: graphql.NewList(partnerIntegrationType),
