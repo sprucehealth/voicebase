@@ -18,7 +18,7 @@ RUN cd /usr/local && \
 # Install Go
 RUN cd /usr/local && \
 	rm -rf go && \
-	curl -s https://storage.googleapis.com/golang/go1.8rc1.linux-amd64.tar.gz | tar -zxf - && \
+	curl -s https://storage.googleapis.com/golang/go1.7.4.linux-amd64.tar.gz | tar -zxf - && \
 	ln -s /usr/local/go/bin/go /usr/local/bin/go
 
 # Install Consul
