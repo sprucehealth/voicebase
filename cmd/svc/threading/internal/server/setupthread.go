@@ -197,10 +197,10 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 			}
 			msgBML = bml.BML{
 				`💥  ` + prettyPhone + " is your Spruce number.\n\n",
-				"To place a call from you Spruce number:\n",
-				"1. Return to the home screen and press the ➕  button\n",
+				"To place a call from you Spruce number:\n\n",
+				"1. Return to the home screen and press the ➕ button\n",
 				"2. Select ‘Dialpad’\n",
-				"3. Enter the number you’d like to call or select a number from your phone's contacts\n",
+				"3. Enter the number you’d like to call or select a number from your phone's contacts\n\n",
 				"To manage your Spruce number return to the home screen, tap the settings icon and select your number from the menu.\n\n",
 				"If you’d like to learn more about using your Spruce number, visit our ",
 				&bml.Anchor{HREF: "https://intercom.help/spruce/your-professional-phone-number", Text: "phone guide"},
@@ -254,7 +254,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 				inviteURL := deeplink.OrgColleagueInviteURL(s.webDomain, setupThread.OrganizationID)
 				msgBML = bml.BML{
 					"🙌 Spruce is built for teams! To invite a teammate to join your practice, return to the home screen, tap the settings icon and select ", &bml.Anchor{HREF: inviteURL, Text: "Invite Teammates"}, ".\n\n",
-					"When you invite a teammate to join your Spruce organization you unlock:\n",
+					"When you invite a teammate to join your Spruce organization you unlock:\n\n",
 					"📥  A Shared Team Inbox - keep everyone in sync with one inbox that gives all teammates the ability to see and respond to incoming patient communication\n",
 					"🔒  Secure Team Chats - coordinate care in a private team-only conversation\n",
 					"📝  Internal Notes and @Pages - Tap ‘Internal’ to create “sticky notes” in patient conversations that are only visible to teammates. Use the ‘@’ sign to explicitly notify a teammate to something important\n\n",
