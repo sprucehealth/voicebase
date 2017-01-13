@@ -197,7 +197,7 @@ func (s *threadsServer) OnboardingThreadEvent(ctx context.Context, in *threading
 			}
 			msgBML = bml.BML{
 				`💥  ` + prettyPhone + " is your Spruce number.\n\n",
-				"To place a call from you Spruce number:\n\n",
+				"To place a call from your Spruce number in the mobile app:\n\n",
 				"1. Return to the home screen and press the ➕ button\n",
 				"2. Select ‘Dialpad’\n",
 				"3. Enter the number you’d like to call or select a number from your phone's contacts\n\n",
