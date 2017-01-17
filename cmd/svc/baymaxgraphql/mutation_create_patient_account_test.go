@@ -51,28 +51,6 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 		}, nil),
 	)
 
-	g.ra.Expect(mock.NewExpectation(g.ra.Entities, &directory.LookupEntitiesRequest{
-		Key: &directory.LookupEntitiesRequest_EntityID{
-			EntityID: "parkedEntityID",
-		},
-		RequestedInformation: &directory.RequestedInformation{
-			EntityInformation: []directory.EntityInformation{
-				directory.EntityInformation_CONTACTS,
-			},
-			Depth: 0,
-		},
-		RootTypes: []directory.EntityType{directory.EntityType_PATIENT},
-	}).WithReturns([]*directory.Entity{
-		{
-			Contacts: []*directory.Contact{
-				{
-					ContactType: directory.ContactType_PHONE,
-					Value:       "+14155551212",
-				},
-			},
-		},
-	}, nil))
-
 	// Assert that our email was verified
 	g.ra.Expect(mock.NewExpectation(g.ra.VerifiedValue, "emailToken").WithReturns("someone@somewhere.com", nil))
 
@@ -195,6 +173,7 @@ func TestCreatePatientAccountMutation(t *testing.T) {
 			createPatientAccount(input: {
 				clientMutationId: "a1b2c3",
 				email: "someoneElse@somewhere.com",
+				phoneNumber: "+14155551212",
 				password: "password",
 				firstName: "first",
 				lastName: "last",

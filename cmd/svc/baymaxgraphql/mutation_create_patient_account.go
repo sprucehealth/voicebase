@@ -289,14 +289,15 @@ func createPatientAccount(p graphql.ResolveParams) (*createPatientAccountOutput,
 			ErrorMessage:     "Password cannot be empty",
 		}, nil
 	}
+
 	var phoneNumber string
-	if _, ok := inv.Invite.(*invite.LookupInviteResponse_Patient); ok {
+	if in.PhoneNumber != "" {
+		phoneNumber = in.PhoneNumber
+	} else if _, ok := inv.Invite.(*invite.LookupInviteResponse_Patient); ok {
 		phoneNumber, err = contactForParkedEntity(ctx, ram, inv.GetPatient().Patient.ParkedEntityID, directory.ContactType_PHONE)
 		if err != nil {
 			return nil, errors.InternalError(ctx, fmt.Errorf("Encountered error whil getting parked phone number for account creation: %s", err))
 		}
-	} else {
-		phoneNumber = in.PhoneNumber
 	}
 
 	pn, err := phone.ParseNumber(phoneNumber)
