@@ -32,9 +32,11 @@ import (
 )
 
 const (
-	supportThreadTitle    = "Spruce Support"
-	onboardingThreadTitle = "Setup Assistant"
-	teamSpruceInitialText = `Use this conversation to chat with directly with the team at Spruce 😀.
+	supportThreadTitle          = "Spruce Support 🌲"
+	supportEntityDisplayName    = "Spruce Support"
+	onboardingThreadTitle       = "Setup 🚀"
+	onboardingEntityDisplayName = "Setup Assistant"
+	teamSpruceInitialText       = `Use this conversation to chat with directly with the team at Spruce 😀.
 
 We’re here 7am-7pm PST to answer any questions you have - big or small. Feel free to drop us a line at any time!`
 )
@@ -344,15 +346,15 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 			var err error
 			tsEnt1, err = ram.CreateEntity(ctx, &directory.CreateEntityRequest{
 				EntityInfo: &directory.EntityInfo{
-					GroupName:   supportThreadTitle,
-					DisplayName: supportThreadTitle,
+					GroupName:   supportEntityDisplayName,
+					DisplayName: supportEntityDisplayName,
 				},
 				Type: directory.EntityType_SYSTEM,
 				InitialMembershipEntityID: orgEntityID,
 			})
 			return err
 		})
-		remoteSupportThreadTitle := fmt.Sprintf(supportThreadTitle+" (%s)", organizationName)
+		remoteSupportThreadTitle := fmt.Sprintf(supportEntityDisplayName+" (%s)", organizationName)
 		par.Go(func() error {
 			var err error
 			tsEnt2, err = ram.CreateEntity(ctx, &directory.CreateEntityRequest{
@@ -376,7 +378,7 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 				PrimaryEntity2ID:     tsEnt2.ID,
 				PrependSenderThread1: false,
 				PrependSenderThread2: true,
-				Summary:              supportThreadTitle + ": " + teamSpruceInitialText[:128],
+				Summary:              supportEntityDisplayName + ": " + teamSpruceInitialText[:128],
 				Text:                 teamSpruceInitialText,
 				Type:                 threading.THREAD_TYPE_SUPPORT,
 				SystemTitle1:         supportThreadTitle,
@@ -390,8 +392,8 @@ func createProviderAccount(p graphql.ResolveParams) (*createProviderAccountOutpu
 		// Create an onboarding thread and related system entity
 		onbEnt, err := ram.CreateEntity(ctx, &directory.CreateEntityRequest{
 			EntityInfo: &directory.EntityInfo{
-				GroupName:   onboardingThreadTitle,
-				DisplayName: onboardingThreadTitle,
+				GroupName:   onboardingEntityDisplayName,
+				DisplayName: onboardingEntityDisplayName,
 			},
 			Type: directory.EntityType_SYSTEM,
 			InitialMembershipEntityID: orgEntityID,

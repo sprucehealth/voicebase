@@ -732,7 +732,7 @@ func transformEntityToResponse(ctx context.Context, staticURLPrefix string, e *d
 		}
 	case directory.EntityType_SYSTEM:
 		// TODO: it is brittle to use the name for checking the difference, but right now there's no other way to know
-		if ent.DisplayName == supportThreadTitle {
+		if ent.DisplayName == supportEntityDisplayName {
 			ent.Avatar = &models.Image{
 				URL:    staticURLPrefix + "img/avatar/icon_profile_teamspruce@3x.png",
 				Width:  108,

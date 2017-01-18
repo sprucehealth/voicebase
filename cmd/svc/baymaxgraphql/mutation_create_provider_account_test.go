@@ -124,8 +124,8 @@ func TestCreateProviderAccountMutation(t *testing.T) {
 	// Create linked support threads
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
-			DisplayName: supportThreadTitle,
-			GroupName:   supportThreadTitle,
+			DisplayName: supportEntityDisplayName,
+			GroupName:   supportEntityDisplayName,
 		},
 		Type: directory.EntityType_SYSTEM,
 		InitialMembershipEntityID: "e_org",
@@ -134,8 +134,8 @@ func TestCreateProviderAccountMutation(t *testing.T) {
 	}, nil))
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
-			DisplayName: supportThreadTitle + " (org)",
-			GroupName:   supportThreadTitle + " (org)",
+			DisplayName: supportEntityDisplayName + " (org)",
+			GroupName:   supportEntityDisplayName + " (org)",
 		},
 		Type: directory.EntityType_SYSTEM,
 		InitialMembershipEntityID: "spruce_org",
@@ -149,18 +149,18 @@ func TestCreateProviderAccountMutation(t *testing.T) {
 		PrimaryEntity2ID:     "e_sys_2",
 		PrependSenderThread1: false,
 		PrependSenderThread2: true,
-		Summary:              supportThreadTitle + ": " + teamSpruceInitialText[:128],
+		Summary:              supportEntityDisplayName + ": " + teamSpruceInitialText[:128],
 		Text:                 teamSpruceInitialText,
 		Type:                 threading.THREAD_TYPE_SUPPORT,
 		SystemTitle1:         supportThreadTitle,
-		SystemTitle2:         supportThreadTitle + " (org)",
+		SystemTitle2:         supportEntityDisplayName + " (org)",
 	}).WithReturns(&threading.CreateLinkedThreadsResponse{Thread1: &threading.Thread{}, Thread2: &threading.Thread{}}, nil))
 
 	// Create onboarding thread
 	g.ra.Expect(mock.NewExpectation(g.ra.CreateEntity, &directory.CreateEntityRequest{
 		EntityInfo: &directory.EntityInfo{
-			DisplayName: onboardingThreadTitle,
-			GroupName:   onboardingThreadTitle,
+			DisplayName: onboardingEntityDisplayName,
+			GroupName:   onboardingEntityDisplayName,
 		},
 		Type: directory.EntityType_SYSTEM,
 		InitialMembershipEntityID: "e_org",
