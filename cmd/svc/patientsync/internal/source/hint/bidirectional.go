@@ -18,7 +18,7 @@ func UpdatePatientIfDiffersFromEntity(patientID string, syncConfig *sync.Config,
 	}
 
 	// nothing to do if the patients do not differ between hint and spruce
-	if !sync.Differs(transformPatient(patient), entity) {
+	if !sync.Differs(transformPatient(patient, syncConfig), entity) {
 		golog.Infof("patient %s and entity %s do not differ so nothing to do here", patientID, entity.ID)
 		return nil
 	}

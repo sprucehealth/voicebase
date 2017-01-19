@@ -193,6 +193,7 @@ func (s *syncEvent) processPatientUpdatedEvent(ctx context.Context, cfg *sync.Co
 				ActorEntityID: thread.OrganizationID,
 				ThreadID:      thread.ID,
 				SystemTitle:   updateRes.Entity.Info.DisplayName,
+				AddTags:       patient.Tags,
 			}); err != nil {
 				return errors.Errorf("Unable to update system title for thread %s : %s", thread.ID, err)
 			}
@@ -369,6 +370,7 @@ func (s *syncEvent) createPatientAndThread(ctx context.Context, patient *sync.Pa
 			Summary:         externalEntity.Info.DisplayName,
 			SystemTitle:     externalEntity.Info.DisplayName,
 			Origin:          threading.THREAD_ORIGIN_SYNC,
+			Tags:            patient.Tags,
 		})
 		if err != nil {
 			return errors.Errorf("Unable to create thread for %s : %s", externalEntity.ID, err)

@@ -87,7 +87,7 @@ func transformDOB(dob string) (*sync.Patient_Date, error) {
 	}, nil
 }
 
-func transformPatient(hintPatient *hint.Patient) *sync.Patient {
+func transformPatient(hintPatient *hint.Patient, syncConfig *sync.Config) *sync.Patient {
 	dob, err := transformDOB(hintPatient.DOB)
 	if err != nil {
 		golog.Errorf("Unable to transform dob, ignoring: %s", err.Error())
@@ -114,6 +114,15 @@ func transformPatient(hintPatient *hint.Patient) *sync.Patient {
 			Number: hintPhone.Number,
 			Type:   syncPhoneTypeFromHint(hintPhone),
 		})
+	}
+
+	for _, item := range syncConfig.TagMappings {
+		switch k := item.Key.(type) {
+		case *sync.TagMappingItem_ProviderID:
+			if hintPatient.Practitioner != nil && hintPatient.Practitioner.ID == k.ProviderID {
+				syncPatient.Tags = append(syncPatient.Tags, item.Tag)
+			}
+		}
 	}
 
 	return syncPatient

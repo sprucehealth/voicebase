@@ -69,7 +69,7 @@ func DoInitialSync(dl dal.DAL, orgID string, syncEventsQueueURL string, sqsAPI s
 	for iter.Next() {
 
 		hintPatient := iter.Current().(*hint.Patient)
-		syncPatient := transformPatient(hintPatient)
+		syncPatient := transformPatient(hintPatient, syncConfig)
 
 		patients = append(patients, syncPatient)
 		syncBookmark = hintPatient.CreatedAt

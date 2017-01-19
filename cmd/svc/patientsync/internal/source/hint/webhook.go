@@ -107,7 +107,7 @@ func (h *webhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	syncPatient := transformPatient(&patient)
+	syncPatient := transformPatient(&patient, syncConfig)
 
 	if err := func() error {
 

@@ -31,6 +31,17 @@ message Config {
 	oneof token {
 		HintToken hint = 5;
 	}
+
+	repeated TagMappingItem tag_mappings = 6;
+}
+
+// TagMappingItem describes how to map a attributes from the external system to tags
+// associated with the conversation created for the patient in our system.
+message TagMappingItem {
+	oneof key {
+		string provider_id = 1 [(gogoproto.customname) = "ProviderID"];
+	} 
+	string tag = 2;
 }
 
 // HintToken represents the token information pertaining to a particular practice
@@ -94,6 +105,7 @@ message Patient {
 		GENDER_OTHER = 3;
 	}
 	Gender gender = 11;
+	repeated string tags = 12;
 }
 
 // PatientUpdatedEvent represents an event to update a list of existing patients in our system.
