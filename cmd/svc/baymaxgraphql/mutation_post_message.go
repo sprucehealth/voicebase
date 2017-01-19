@@ -516,6 +516,7 @@ func trackPostMessage(ctx context.Context, thr *threading.Thread, req *threading
 	properties["organization_id"] = thr.OrganizationID
 	properties["thread_id"] = req.ThreadID
 	properties["length"] = len(req.Message.Text)
+	properties["internal"] = req.Message.Internal
 	for key, value := range attachmentProperties {
 		properties[key] = value
 	}

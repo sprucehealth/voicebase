@@ -605,28 +605,35 @@ func recordCreatePatientAccountAnalytics(
 		golog.Debugf("Patient Account created. ID = %s Device = %s", account.ID, headers.DeviceID)
 	}
 
-	analytics.SegmentIdentify(&segment.Identify{
-		UserId: account.ID,
-		Traits: map[string]interface{}{
-			"platform":  platform,
-			"createdAt": time.Now().Unix(),
-			"type":      "patient",
-		},
-		Context: map[string]interface{}{
-			"ip":        remoteAddrFromParams(p),
-			"userAgent": userAgentFromParams(p),
-		},
-	})
 	props := map[string]interface{}{
 		"entity_id":       accEntityID,
 		"organization_id": orgID,
 	}
 	if inv != nil {
 		props["invite"] = inv.Type.String()
+		props["patient"] = (inv.Type == invite.LOOKUP_INVITE_RESPONSE_PATIENT || inv.Type == invite.LOOKUP_INVITE_RESPONSE_ORGANIZATION_CODE)
 	}
-	analytics.SegmentTrack(&segment.Track{
-		Event:      "signedup",
-		UserId:     account.ID,
-		Properties: props,
+	conc.Go(func() {
+		analytics.SegmentIdentify(&segment.Identify{
+			UserId: account.ID,
+			Traits: map[string]interface{}{
+				"platform":  platform,
+				"createdAt": time.Now().Unix(),
+				"type":      "patient",
+			},
+			Context: map[string]interface{}{
+				"ip":        remoteAddrFromParams(p),
+				"userAgent": userAgentFromParams(p),
+			},
+		}, analytics.Synchronous)
+		analytics.SegmentTrack(&segment.Track{
+			Event:      "signedup",
+			UserId:     account.ID,
+			Properties: props,
+		}, analytics.Synchronous)
+		analytics.SegmentGroup(&segment.Group{
+			UserId:  account.ID,
+			GroupId: orgID,
+		}, analytics.Synchronous)
 	})
 }

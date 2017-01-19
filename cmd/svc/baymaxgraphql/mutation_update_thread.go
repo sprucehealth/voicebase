@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/gqlctx"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -173,6 +175,7 @@ var updateThreadMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
+
 		// The thread will be nil in the response if the viewer removed them self as a member of a team thread
 		if res.Thread == nil {
 			return &updateThreadOutput{
@@ -192,6 +195,8 @@ var updateThreadMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
+		trackUpdateThreadAnalytics(&in, ent)
+
 		return &updateThreadOutput{
 			ClientMutationID: in.ClientMutationID,
 			Success:          true,
@@ -200,4 +205,20 @@ var updateThreadMutation = &graphql.Field{
 			entityID:         ent.ID,
 		}, nil
 	}),
+}
+
+func trackUpdateThreadAnalytics(in *updateThreadInput, ent *directory.Entity) {
+	if len(in.AddTags) > 0 {
+		analytics.SegmentTrack(&segment.Track{
+			Event:  "add-tags",
+			UserId: ent.AccountID,
+		})
+	}
+
+	if len(in.RemoveTags) > 0 {
+		analytics.SegmentTrack(&segment.Track{
+			Event:  "remove-tags",
+			UserId: ent.AccountID,
+		})
+	}
 }
