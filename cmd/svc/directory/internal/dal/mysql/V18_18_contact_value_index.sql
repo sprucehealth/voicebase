@@ -1,0 +1,1 @@
+CREATE INDEX idx_value ON entity_contact (value);
