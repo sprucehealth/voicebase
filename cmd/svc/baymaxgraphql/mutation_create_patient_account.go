@@ -612,6 +612,10 @@ func recordCreatePatientAccountAnalytics(
 	if inv != nil {
 		props["invite"] = inv.Type.String()
 		props["patient"] = (inv.Type == invite.LOOKUP_INVITE_RESPONSE_PATIENT || inv.Type == invite.LOOKUP_INVITE_RESPONSE_ORGANIZATION_CODE)
+		switch t := inv.GetInvite().(type) {
+		case *invite.LookupInviteResponse_Organization:
+			props["org_code"] = t.Organization.Token
+		}
 	}
 	conc.Go(func() {
 		analytics.SegmentIdentify(&segment.Identify{

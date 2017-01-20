@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	segment "github.com/segmentio/analytics-go"
@@ -245,7 +246,7 @@ var authenticateMutation = &graphql.Field{
 		expires := time.Unix(int64(res.Token.ExpirationEpoch), 0)
 
 		// Track the authentication
-		conc.Go(func() { trackAuthentication(p, res.Account.ID, devicectx.SpruceHeaders(ctx)) })
+		conc.Go(func() { trackAuthentication(p, res.Account, devicectx.SpruceHeaders(ctx)) })
 
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 		// that likely won't change, but this still isn't a great way to update the context.
@@ -264,18 +265,19 @@ var authenticateMutation = &graphql.Field{
 	},
 }
 
-func trackAuthentication(p graphql.ResolveParams, accountID string, eh *device.SpruceHeaders) {
+func trackAuthentication(p graphql.ResolveParams, account *auth.Account, eh *device.SpruceHeaders) {
 	analytics.SegmentTrack(&segment.Track{
-		UserId: accountID,
+		UserId: account.ID,
 		Event:  "signedin",
 		Properties: map[string]interface{}{
 			"platform": eh.Platform.String(),
 		},
 	})
 	analytics.SegmentIdentify(&segment.Identify{
-		UserId: accountID,
+		UserId: account.ID,
 		Traits: map[string]interface{}{
 			"platform": eh.Platform.String(),
+			"type":     strings.ToLower(account.Type.String()),
 		},
 		Context: map[string]interface{}{
 			"ip":        remoteAddrFromParams(p),
@@ -344,7 +346,7 @@ var authenticateWithCodeMutation = &graphql.Field{
 		result.Set("auth_expiration", time.Unix(int64(res.Token.ExpirationEpoch), 0))
 
 		// Track the authentication
-		conc.Go(func() { trackAuthentication(p, res.Account.ID, devicectx.SpruceHeaders(ctx)) })
+		conc.Go(func() { trackAuthentication(p, res.Account, devicectx.SpruceHeaders(ctx)) })
 
 		// TODO: updating the context this is safe for now because the GraphQL pkg serializes mutations.
 		// that likely won't change, but this still isn't a great way to update the context.

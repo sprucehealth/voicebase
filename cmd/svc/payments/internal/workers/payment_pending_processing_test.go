@@ -12,6 +12,7 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/test"
 	"github.com/sprucehealth/backend/libs/testhelpers/mock"
+	"github.com/sprucehealth/backend/svc/directory"
 	dirmock "github.com/sprucehealth/backend/svc/directory/mock"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -140,6 +141,18 @@ func TestPaymentPendingProcessing(t *testing.T) {
 			},
 		}),
 	)
+
+	directorymock.Expect(mock.NewExpectation(directorymock.LookupEntities, &directory.LookupEntitiesRequest{
+		Key: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "entityID",
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				AccountID: "accountID",
+			},
+		},
+	}, nil))
 
 	w := New(dmock, directorymock, tmock, smock, "", "", "test.com")
 	w.processPaymentPendingProcessing()
@@ -272,6 +285,18 @@ func TestPaymentPendingProcessing_CardDeclined(t *testing.T) {
 		}),
 	)
 
+	directorymock.Expect(mock.NewExpectation(directorymock.LookupEntities, &directory.LookupEntitiesRequest{
+		Key: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "entityID",
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				AccountID: "accountID",
+			},
+		},
+	}, nil))
+
 	w := New(dmock, directorymock, tmock, smock, "", "", "test.com")
 	w.processPaymentPendingProcessing()
 
@@ -402,6 +427,17 @@ func TestPaymentPendingProcessing_UnexpectedError(t *testing.T) {
 			},
 		}),
 	)
+	directorymock.Expect(mock.NewExpectation(directorymock.LookupEntities, &directory.LookupEntitiesRequest{
+		Key: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: "entityID",
+		},
+	}).WithReturns(&directory.LookupEntitiesResponse{
+		Entities: []*directory.Entity{
+			{
+				AccountID: "accountID",
+			},
+		},
+	}, nil))
 
 	w := New(dmock, directorymock, tmock, smock, "", "", "test.com")
 	w.processPaymentPendingProcessing()

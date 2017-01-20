@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/apiaccess"
@@ -51,6 +52,7 @@ var queryType = graphql.NewObject(
 						UserId: acc.ID,
 						Traits: map[string]interface{}{
 							"platform": platform,
+							"type":     strings.ToLower(acc.Type.String()),
 						},
 						Context: map[string]interface{}{
 							"ip":        remoteAddrFromParams(p),
