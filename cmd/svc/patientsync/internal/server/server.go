@@ -204,7 +204,7 @@ func (s *server) UpdateSyncConfiguration(ctx context.Context, in *patientsync.Up
 		return nil, errors.Errorf("unable to lookup config for %s: %s", in.OrganizationEntityID, err.Error())
 	}
 
-	tagMappings := make([]*sync.TagMappingItem, len(syncConfig.TagMappings))
+	tagMappings := make([]*sync.TagMappingItem, len(in.TagMappings))
 	for i, item := range in.TagMappings {
 		tagMappings[i] = &sync.TagMappingItem{
 			Tag: item.Tag,
