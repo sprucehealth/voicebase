@@ -4,14 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	segment "github.com/segmentio/analytics-go"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/payments/internal/server"
+	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/smet"
+	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/stripe/stripe-go"
@@ -165,6 +168,25 @@ func (w *Workers) postPaymentCompletedToThread(ctx context.Context, payment *dal
 		return errors.Trace(err)
 	}
 
+	entity, err := directory.SingleEntity(ctx, w.directoryClient, &directory.LookupEntitiesRequest{
+		Key: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: paymentMethod.EntityID,
+		},
+	})
+	if err != nil {
+		golog.Errorf("unable to lookup entity %s : %s", paymentMethod.EntityID, err)
+	} else {
+		analytics.SegmentTrack(&segment.Track{
+			Event:  "payment-processed",
+			UserId: entity.AccountID,
+			Properties: map[string]interface{}{
+				"amount":          payment.Amount,
+				"thread_id":       payment.ThreadID,
+				"organization_id": resp.Thread.OrganizationID,
+			},
+		})
+	}
+
 	return nil
 }
 
@@ -208,5 +230,25 @@ func (w *Workers) postErrorProcessingToThread(ctx context.Context, payment *dal.
 	}); err != nil {
 		return errors.Trace(err)
 	}
+
+	entity, err := directory.SingleEntity(ctx, w.directoryClient, &directory.LookupEntitiesRequest{
+		Key: &directory.LookupEntitiesRequest_EntityID{
+			EntityID: paymentMethod.EntityID,
+		},
+	})
+	if err != nil {
+		golog.Errorf("unable to lookup entity %s : %s", paymentMethod.EntityID, err)
+	} else {
+		analytics.SegmentTrack(&segment.Track{
+			Event:  "payment-processing-error",
+			UserId: entity.AccountID,
+			Properties: map[string]interface{}{
+				"amount":          payment.Amount,
+				"thread_id":       payment.ThreadID,
+				"organization_id": resp.Thread.OrganizationID,
+			},
+		})
+	}
+
 	return nil
 }
