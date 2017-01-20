@@ -14,7 +14,6 @@ var spamTextPhrases = []string{
 	"The code is only used for removing WeChat restrictions. Do not share it with anyone.",
 	"You can also tap on this link to verify your phone: v.whatsapp.com",
 	"[Alibaba Group]Your verification code for validation is",
-	"PayPal: Your mobile number is linked to your account. To check balance, reply with BAL",
 	"Your ESIAtalk number is",
 	"is your AOL verification code.",
 	"Jelastic account activation code:",
