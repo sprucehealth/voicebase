@@ -16,29 +16,6 @@ import (
 	"github.com/sprucehealth/graphql"
 )
 
-const (
-	patientSyncConfigurationThreadTypeUnknown  = "UNKNOWN"
-	patientSyncConfigurationThreadTypeStandard = "STANDARD"
-	patientSyncConfigurationThreadTypeSecure   = "SECURE"
-)
-
-var patientSyncConfigurationThreadType = graphql.NewEnum(
-	graphql.EnumConfig{
-		Name: "PatientSyncConfigurationThreadType",
-		Values: graphql.EnumValueConfigMap{
-			patientSyncConfigurationThreadTypeUnknown: &graphql.EnumValueConfig{
-				Value: patientSyncConfigurationThreadTypeUnknown,
-			},
-			patientSyncConfigurationThreadTypeStandard: &graphql.EnumValueConfig{
-				Value: patientSyncConfigurationThreadTypeStandard,
-			},
-			patientSyncConfigurationThreadTypeSecure: &graphql.EnumValueConfig{
-				Value: patientSyncConfigurationThreadTypeSecure,
-			},
-		},
-	},
-)
-
 var tagMappingType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "TagMappingItem",
@@ -54,7 +31,7 @@ var patientSyncConfigurationType = graphql.NewObject(
 		Fields: graphql.Fields{
 			"source":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"connected":   &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-			"threadType":  &graphql.Field{Type: graphql.NewNonNull(patientSyncConfigurationThreadType)},
+			"threadType":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 			"tagMappings": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(tagMappingType))},
 		},
 	})
