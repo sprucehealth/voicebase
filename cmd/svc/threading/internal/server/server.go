@@ -1375,12 +1375,35 @@ func (s *threadsServer) SavedQueries(ctx context.Context, in *threading.SavedQue
 	res := &threading.SavedQueriesResponse{
 		SavedQueries: make([]*threading.SavedQuery, len(queries)),
 	}
+	// Track extremes of unread count to sanity check the notifications saved query
+	var maxUnread int
+	var sumUnread int
+	var nq *models.SavedQuery
 	for i, q := range queries {
+		if q.Type == models.SavedQueryTypeNotifications {
+			nq = q
+		} else if q.NotificationsEnabled {
+			if q.Unread > maxUnread {
+				maxUnread = q.Unread
+			}
+			sumUnread += q.Unread
+		}
 		sq, err := transformSavedQueryToResponse(q)
 		if err != nil {
 			return nil, errors.Errorf("Failed to transform saved query: %s", err)
 		}
 		res.SavedQueries[i] = sq
+	}
+	// If the unread count of the notifications saved query is out of range then rebuild it.
+	// We can't know for sure if the count is correct, but this should catch at least the case
+	// where it won't go to zero even though there's no unread threads.
+	if nq.Unread < maxUnread || nq.Unread > sumUnread {
+		golog.Errorf("Unread notification count for entity %s is %d but should be in the range [%d,%d]", in.EntityID, nq.Unread, maxUnread, sumUnread)
+		conc.Go(func() {
+			if err := s.rebuildSavedQuery(context.Background(), nq); err != nil {
+				golog.Errorf("Failed to rebuild notifications saved query for entity %s: %s", in.EntityID, err)
+			}
+		})
 	}
 	return res, nil
 }
