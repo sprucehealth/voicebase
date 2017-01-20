@@ -8,6 +8,7 @@ import (
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/directory"
+	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/graphql"
 )
 
@@ -39,14 +40,15 @@ func init() {
 					Resolve:           entityPracticeLinkResolve,
 					DeprecationReason: "DEPRECATED due to practice links becoming plural per org. Use `practiceLinks`",
 				},
-				"practiceLinks":      &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(practiceLinkType)), Resolve: entityPracticeLinksResolve},
-				"type":               &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"status":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-				"externalIDs":        &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
-				"settings":           &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(settingType)), Resolve: entitySettingsResolve},
-				"vendorAccounts":     &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(vendorAccountType)), Resolve: entityVendorAccountsResolve},
-				"savedMessages":      &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(savedMessageType)), Resolve: entitySavedMessagesResolve},
-				"savedThreadQueries": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(savedThreadQueryType)), Resolve: entitySavedThreadQueriesResolve},
+				"practiceLinks":             &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(practiceLinkType)), Resolve: entityPracticeLinksResolve},
+				"type":                      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"status":                    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+				"externalIDs":               &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
+				"settings":                  &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(settingType)), Resolve: entitySettingsResolve},
+				"vendorAccounts":            &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(vendorAccountType)), Resolve: entityVendorAccountsResolve},
+				"patientSyncConfigurations": &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(patientSyncConfigurationType)), Resolve: entityPatientSyncConfigurationsResolve},
+				"savedMessages":             &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(savedMessageType)), Resolve: entitySavedMessagesResolve},
+				"savedThreadQueries":        &graphql.Field{Type: graphql.NewList(graphql.NewNonNull(savedThreadQueryType)), Resolve: entitySavedThreadQueriesResolve},
 			},
 		},
 	)
@@ -115,6 +117,20 @@ func entityVendorAccountsResolve(p graphql.ResolveParams) (interface{}, error) {
 	entity := p.Source.(*models.Entity)
 	golog.ContextLogger(ctx).Debugf("Looking up entity vendor accounts for %s", entity.ID)
 	return getEntityVendorAccounts(ctx, client.Payments(p), entity.ID)
+}
+
+func entityPatientSyncConfigurationsResolve(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+	entity := p.Source.(*models.Entity)
+	// TODO: make source configurable when we support more sources
+	syncConfiguration, err := getEntityPatientSyncConfigurations(ctx, client.PatientSync(p), patientsync.SOURCE_HINT, entity.ID)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	if syncConfiguration == nil {
+		return nil, nil
+	}
+	return []*models.PatientSyncConfiguration{syncConfiguration}, nil
 }
 
 func entityAccountResolve(p graphql.ResolveParams) (interface{}, error) {

@@ -3,6 +3,7 @@
 node {
 	// Lowercase version of the job name
 	def name = env.BUILD_TAG.toLowerCase()
+	name = name.replaceAll(/[^A-Za-z0-9 ]/, "_")
 
 	// get the uid of the user running the job to be able to properly manage permissions
 	def parentUID = sh(script: 'id -u', returnStdout: true).trim()

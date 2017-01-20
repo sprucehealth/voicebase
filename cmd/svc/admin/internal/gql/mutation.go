@@ -21,6 +21,7 @@ func NewMutationRoot() *graphql.Object {
 				"provisionNumber":                        provisionNumberField,
 				"updateSavedThreadQuery":                 updateSavedThreadQueryField,
 				"updateVendorAccount":                    updateVendorAccountField,
+				"updateSyncConfiguration":                updateSyncConfigurationField,
 			},
 		})
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -42,12 +43,13 @@ var (
 	flagWebDomain = flag.String("web_domain", "", "Web `domain`")
 
 	// Services
-	flagAuthAddr      = flag.String("auth_addr", "_auth._tcp.service", "Address of the auth service")
-	flagDirectoryAddr = flag.String("directory_addr", "_directory._tcp.service", "Address of the directory service")
-	flagInviteAddr    = flag.String("invite_addr", "_invite._tcp.service", "Address of the invite service")
-	flagPaymentsAddr  = flag.String("payments_addr", "_payments._tcp.service", "Address of the payments service")
-	flagThreadingAddr = flag.String("threading_addr", "_threading._tcp.service", "Address of the threading service")
-	flagSettingsAddr  = flag.String("settings_addr", "_settings._tcp.service", "Address of the settings service")
+	flagAuthAddr        = flag.String("auth_addr", "_auth._tcp.service", "Address of the auth service")
+	flagDirectoryAddr   = flag.String("directory_addr", "_directory._tcp.service", "Address of the directory service")
+	flagInviteAddr      = flag.String("invite_addr", "_invite._tcp.service", "Address of the invite service")
+	flagPaymentsAddr    = flag.String("payments_addr", "_payments._tcp.service", "Address of the payments service")
+	flagThreadingAddr   = flag.String("threading_addr", "_threading._tcp.service", "Address of the threading service")
+	flagSettingsAddr    = flag.String("settings_addr", "_settings._tcp.service", "Address of the settings service")
+	flagPatientSyncAddr = flag.String("patientsync_addr", "_patientsync._tcp.service", "Address of the patientsync service")
 )
 
 func main() {
@@ -85,6 +87,12 @@ func main() {
 	}
 	threadCli := threading.NewThreadsClient(conn)
 
+	conn, err = svc.DialGRPC(*flagPatientSyncAddr)
+	if err != nil {
+		golog.Fatalf("Unable to connect to patientsync service: %s", err)
+	}
+	patientSyncCli := patientsync.NewPatientSyncClient(conn)
+
 	signer, err := sig.NewSigner([][]byte{[]byte(*flagAuthTokenSecret)}, nil)
 	if err != nil {
 		golog.Fatalf(err.Error())
@@ -106,6 +114,7 @@ func main() {
 		dirCli,
 		settingsCli,
 		paymentsCli,
+		patientSyncCli,
 		inviteCli,
 		authCli,
 		threadCli,

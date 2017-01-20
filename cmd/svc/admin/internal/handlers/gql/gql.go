@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/invite"
+	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/payments"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/backend/svc/threading"
@@ -30,15 +31,16 @@ type gqlReq struct {
 }
 
 type gqlHandler struct {
-	behindProxy     bool
-	schema          graphql.Schema
-	domains         *client.Domain
-	directoryClient directory.DirectoryClient
-	settingsClient  settings.SettingsClient
-	paymentsClient  payments.PaymentsClient
-	inviteClient    invite.InviteClient
-	authClient      auth.AuthClient
-	threadingClient threading.ThreadsClient
+	behindProxy       bool
+	schema            graphql.Schema
+	domains           *client.Domain
+	directoryClient   directory.DirectoryClient
+	settingsClient    settings.SettingsClient
+	paymentsClient    payments.PaymentsClient
+	patientSyncClient patientsync.PatientSyncClient
+	inviteClient      invite.InviteClient
+	authClient        auth.AuthClient
+	threadingClient   threading.ThreadsClient
 }
 
 // New returns an initialized instance of *gqlHandler
@@ -49,6 +51,7 @@ func New(
 	directoryClient directory.DirectoryClient,
 	settingsClient settings.SettingsClient,
 	paymentsClient payments.PaymentsClient,
+	patientSyncClient patientsync.PatientSyncClient,
 	inviteClient invite.InviteClient,
 	authClient auth.AuthClient,
 	threadingClient threading.ThreadsClient,
@@ -69,12 +72,13 @@ func New(
 			Web:       webDomain,
 			InviteAPI: inviteAPIDomain,
 		},
-		directoryClient: directoryClient,
-		settingsClient:  settingsClient,
-		paymentsClient:  paymentsClient,
-		inviteClient:    inviteClient,
-		authClient:      authClient,
-		threadingClient: threadingClient,
+		directoryClient:   directoryClient,
+		settingsClient:    settingsClient,
+		paymentsClient:    paymentsClient,
+		patientSyncClient: patientSyncClient,
+		inviteClient:      inviteClient,
+		authClient:        authClient,
+		threadingClient:   threadingClient,
 	}, schema
 }
 
@@ -105,6 +109,7 @@ func (h *gqlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.directoryClient,
 			h.settingsClient,
 			h.paymentsClient,
+			h.patientSyncClient,
 			h.inviteClient,
 			h.authClient,
 			h.threadingClient),

@@ -47,3 +47,11 @@ func (s *Client) LookupSyncConfiguration(ctx context.Context, in *patientsync.Lo
 
 	return rets[0].(*patientsync.LookupSyncConfigurationResponse), mock.SafeError(rets[1])
 }
+
+func (s *Client) UpdateSyncConfiguration(ctx context.Context, in *patientsync.UpdateSyncConfigurationRequest, opts ...grpc.CallOption) (*patientsync.UpdateSyncConfigurationResponse, error) {
+	rets := s.Record(in)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*patientsync.UpdateSyncConfigurationResponse), mock.SafeError(rets[1])
+}

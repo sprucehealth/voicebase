@@ -78,3 +78,19 @@ func (_mr *_MockPatientSyncClientRecorder) LookupSyncConfiguration(arg0, arg1 in
 	_s := append([]interface{}{arg0, arg1}, arg2...)
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "LookupSyncConfiguration", _s...)
 }
+
+func (_m *MockPatientSyncClient) UpdateSyncConfiguration(_param0 context.Context, _param1 *patientsync.UpdateSyncConfigurationRequest, _param2 ...grpc.CallOption) (*patientsync.UpdateSyncConfigurationResponse, error) {
+	_s := []interface{}{_param0, _param1}
+	for _, _x := range _param2 {
+		_s = append(_s, _x)
+	}
+	ret := _m.ctrl.Call(_m, "UpdateSyncConfiguration", _s...)
+	ret0, _ := ret[0].(*patientsync.UpdateSyncConfigurationResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (_mr *_MockPatientSyncClientRecorder) UpdateSyncConfiguration(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	_s := append([]interface{}{arg0, arg1}, arg2...)
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "UpdateSyncConfiguration", _s...)
+}

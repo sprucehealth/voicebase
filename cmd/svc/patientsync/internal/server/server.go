@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/patientsync/internal/sync"
 	psettings "github.com/sprucehealth/backend/cmd/svc/patientsync/settings"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/svc/patientsync"
 	"github.com/sprucehealth/backend/svc/settings"
 	"github.com/sprucehealth/go-hint"
@@ -178,17 +179,68 @@ func (s *server) LookupSyncConfiguration(ctx context.Context, in *patientsync.Lo
 		return nil, errors.Errorf("unable to lookup sync config for %s, %s : %s", in.OrganizationEntityID, in.Source, err)
 	}
 
-	var threadType patientsync.ThreadCreationType
-	switch syncConfig.ThreadCreationType {
-	case sync.THREAD_CREATION_TYPE_SECURE:
-		threadType = patientsync.THREAD_CREATION_TYPE_SECURE
-	case sync.THREAD_CREATION_TYPE_STANDARD:
-		threadType = patientsync.THREAD_CREATION_TYPE_STANDARD
-
+	syncBookmark, err := s.dl.SyncBookmarkForOrg(in.OrganizationEntityID)
+	if errors.Cause(err) != dal.NotFound && err != nil {
+		golog.Errorf("unable to lookup sync bookmark for org %s", in.OrganizationEntityID)
 	}
 
 	return &patientsync.LookupSyncConfigurationResponse{
-		ThreadCreationType: threadType,
-		PracticeID:         syncConfig.GetHint().PracticeID,
+		Config: transformSyncConfigurationToResponse(syncConfig, syncBookmark),
+	}, nil
+}
+
+func (s *server) UpdateSyncConfiguration(ctx context.Context, in *patientsync.UpdateSyncConfigurationRequest) (*patientsync.UpdateSyncConfigurationResponse, error) {
+	if in.Source == patientsync.SOURCE_UNKNOWN {
+		return nil, grpc.Errorf(codes.InvalidArgument, "source required")
+	} else if in.OrganizationEntityID == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "organization_entity_id required")
+
+	}
+
+	syncConfig, err := s.dl.SyncConfigForOrg(in.OrganizationEntityID, in.Source.String())
+	if errors.Cause(err) == dal.NotFound {
+		return nil, grpc.Errorf(codes.NotFound, "config for %s not found", in.OrganizationEntityID)
+	} else if err != nil {
+		return nil, errors.Errorf("unable to lookup config for %s: %s", in.OrganizationEntityID, err.Error())
+	}
+
+	tagMappings := make([]*sync.TagMappingItem, len(syncConfig.TagMappings))
+	for i, item := range in.TagMappings {
+		tagMappings[i] = &sync.TagMappingItem{
+			Tag: item.Tag,
+		}
+
+		switch t := item.Key.(type) {
+		case *patientsync.TagMappingItem_ProviderID:
+			tagMappings[i].Key = &sync.TagMappingItem_ProviderID{
+				ProviderID: t.ProviderID,
+			}
+		default:
+			return nil, errors.Errorf("Unknown key type for tag %s: %T", item.Tag, t)
+		}
+	}
+	syncConfig.TagMappings = tagMappings
+
+	switch in.Source {
+	case patientsync.SOURCE_HINT:
+		if err := s.dl.CreateSyncConfig(syncConfig, &syncConfig.GetHint().PracticeID); err != nil {
+			return nil, errors.Errorf("unable to update sync config for %s: %s", in.OrganizationEntityID, err)
+		}
+	case patientsync.SOURCE_UNKNOWN:
+		return nil, errors.Errorf("Unknown source %s for %s", in.Source, in.OrganizationEntityID)
+	}
+
+	syncConfig, err = s.dl.SyncConfigForOrg(in.OrganizationEntityID, in.Source.String())
+	if err != nil {
+		return nil, errors.Errorf("unable to lookup config after update for %s : %s", in.OrganizationEntityID, err)
+	}
+
+	syncBookmark, err := s.dl.SyncBookmarkForOrg(in.OrganizationEntityID)
+	if errors.Cause(err) != dal.NotFound && err != nil {
+		return nil, errors.Errorf("unable to lookup sync bookmark for %s : %s", in.OrganizationEntityID, err)
+	}
+
+	return &patientsync.UpdateSyncConfigurationResponse{
+		Config: transformSyncConfigurationToResponse(syncConfig, syncBookmark),
 	}, nil
 }

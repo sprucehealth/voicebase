@@ -43,9 +43,32 @@ message LookupSyncConfigurationRequest {
 	Source source = 2;
 }
 
+message TagMappingItem {
+	oneof key {
+		string provider_id = 1 [(gogoproto.customname) = "ProviderID"];
+	}
+	string tag = 2;
+}
+
+message Config {
+	ThreadCreationType thread_creation_type = 1;
+	bool connected = 2;
+	Source source = 3;
+	repeated TagMappingItem tag_mappings = 4;	
+}
+
 message LookupSyncConfigurationResponse {
-	string practice_id = 1 [(gogoproto.customname) = "PracticeID"];
-	ThreadCreationType thread_creation_type = 2;
+	Config config = 1;
+}
+
+message UpdateSyncConfigurationRequest {
+	Source source = 1;
+	string organization_entity_id = 2 [(gogoproto.customname) = "OrganizationEntityID"];
+	repeated TagMappingItem tag_mappings = 3;
+}
+
+message UpdateSyncConfigurationResponse {
+	Config config = 1;
 }
 
 service PatientSync {
@@ -62,4 +85,7 @@ service PatientSync {
 
 	// LookupSyncConfiguration enables the looking up of sync configuration for an organization from a particular source.
 	rpc LookupSyncConfiguration(LookupSyncConfigurationRequest) returns (LookupSyncConfigurationResponse);
+
+	// UpdateSyncConfiguration enables updating certain aspects of the sync configuration
+	rpc UpdateSyncConfiguration(UpdateSyncConfigurationRequest) returns (UpdateSyncConfigurationResponse);
 }
