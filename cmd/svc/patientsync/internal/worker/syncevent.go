@@ -151,7 +151,10 @@ func (s *syncEvent) processPatientUpdatedEvent(ctx context.Context, cfg *sync.Co
 		}
 
 		// if patient does exist, check if object differs for the properties that matter
-		if !sync.Differs(patient, patientEntity) {
+		// if they don't differ but there are tags on the patient, then update the threads to ensure
+		// tags are appropriately updated without updating the patient object itself.
+		differs := sync.Differs(patient, patientEntity)
+		if !differs && len(patient.Tags) == 0 {
 			continue
 		}
 
@@ -161,21 +164,25 @@ func (s *syncEvent) processPatientUpdatedEvent(ctx context.Context, cfg *sync.Co
 			continue
 		}
 
-		patientEntity.Info.FirstName = patient.FirstName
-		patientEntity.Info.LastName = patient.LastName
-		patientEntity.Info.DOB = sync.TransformDOB(patient.DOB)
-		patientEntity.Info.Gender = sync.TransformGender(patient.Gender)
+		// update patient info if objects differ
+		displayName := patientEntity.Info.DisplayName
+		if differs {
+			patientEntity.Info.FirstName = patient.FirstName
+			patientEntity.Info.LastName = patient.LastName
+			patientEntity.Info.DOB = sync.TransformDOB(patient.DOB)
+			patientEntity.Info.Gender = sync.TransformGender(patient.Gender)
 
-		// if it does, update it.
-		updateRes, err := s.directory.UpdateEntity(ctx, &directory.UpdateEntityRequest{
-			EntityID:         patientEntity.ID,
-			Contacts:         sync.TransformContacts(patient),
-			UpdateContacts:   true,
-			EntityInfo:       patientEntity.Info,
-			UpdateEntityInfo: true,
-		})
-		if err != nil {
-			return errors.Errorf("Unable to update patient information for %s : %s ", patient.ID, err)
+			updateRes, err := s.directory.UpdateEntity(ctx, &directory.UpdateEntityRequest{
+				EntityID:         patientEntity.ID,
+				Contacts:         sync.TransformContacts(patient),
+				UpdateContacts:   true,
+				EntityInfo:       patientEntity.Info,
+				UpdateEntityInfo: true,
+			})
+			if err != nil {
+				return errors.Errorf("Unable to update patient information for %s : %s ", patient.ID, err)
+			}
+			displayName = updateRes.Entity.Info.DisplayName
 		}
 
 		// update corrresponding threads
@@ -187,12 +194,12 @@ func (s *syncEvent) processPatientUpdatedEvent(ctx context.Context, cfg *sync.Co
 			return errors.Errorf("Unable to get threads for members for %s : %s", patient.ID, err)
 		}
 
-		// update the system title for threads
+		// update the system title and tags for threads
 		for _, thread := range threadsForMembersRes.Threads {
 			if _, err := s.threading.UpdateThread(ctx, &threading.UpdateThreadRequest{
 				ActorEntityID: thread.OrganizationID,
 				ThreadID:      thread.ID,
-				SystemTitle:   updateRes.Entity.Info.DisplayName,
+				SystemTitle:   displayName,
 				AddTags:       patient.Tags,
 			}); err != nil {
 				return errors.Errorf("Unable to update system title for thread %s : %s", thread.ID, err)
