@@ -97,10 +97,11 @@ func DoInitialSync(dl dal.DAL, orgID string, syncEventsQueueURL string, sqsAPI s
 		if err := createSyncEvent(orgID, syncEventsQueueURL, patients, sqsAPI); err != nil {
 			return errors.Trace(err)
 		}
-		// update bookmark
-		if err := dl.UpdateSyncBookmarkForOrg(orgID, syncBookmark, dal.SyncStatusConnected); err != nil {
-			return errors.Trace(err)
-		}
+	}
+
+	// update bookmark
+	if err := dl.UpdateSyncBookmarkForOrg(orgID, syncBookmark, dal.SyncStatusConnected); err != nil {
+		return errors.Trace(err)
 	}
 
 	return nil
