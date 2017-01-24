@@ -31,6 +31,7 @@ import (
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/libs/twilio"
 	"github.com/sprucehealth/backend/svc/excomms"
 )
 
@@ -200,6 +201,12 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			if err != nil {
 				return errors.Trace(err)
 			}
+
+			media.ResourceID, err = twilio.ParseMediaSID(m.MediaURL)
+			if err != nil {
+				golog.Errorf("Unable to parse mediaSID from url %s : %s", m.MediaURL, err)
+			}
+
 			mediaMap[media.ID] = media
 			m.ID = media.ID
 
@@ -252,6 +259,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 		if media.Duration == 0 {
 			media.Duration = time.Duration(params.RecordingDuration) * time.Second
 		}
+		media.ResourceID = params.RecordingSID
 		mediaMap[media.ID] = media
 		params.RecordingMediaID = media.ID
 

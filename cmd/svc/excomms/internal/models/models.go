@@ -131,10 +131,11 @@ type ProxyPhoneNumberReservation struct {
 
 // Media represents an object uploaded to cloud storage.
 type Media struct {
-	ID       string
-	Type     string
-	Name     *string
-	Duration time.Duration
+	ID         string
+	ResourceID string
+	Type       string
+	Name       *string
+	Duration   time.Duration
 }
 
 type BlockedNumbers []phone.Number
