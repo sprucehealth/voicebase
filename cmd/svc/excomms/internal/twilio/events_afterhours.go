@@ -11,7 +11,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
-	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -261,13 +260,12 @@ func afterHoursProcessVoicemail(ctx context.Context, params *rawmsg.TwilioParams
 		return "", errors.Trace(fmt.Errorf("Expected 1 row to be updated for %s but %d rows updated", params.ParentCallSID, rowsUpdated))
 	}
 
-	conc.Go(func() {
-		if err := sns.Publish(eh.sns, eh.incomingRawMsgTopic, &sns.IncomingRawMessageNotification{
-			ID: rawMessageID,
-		}); err != nil {
-			golog.Errorf(err.Error())
-		}
-	})
+	// synchronously publish the message to the SNS topic to ensure that it is guaranteed to be processed.
+	if err := sns.Publish(eh.sns, eh.incomingRawMsgTopic, &sns.IncomingRawMessageNotification{
+		ID: rawMessageID,
+	}); err != nil {
+		return "", errors.Errorf("unable to publish message to sns topic: %s", err)
+	}
 
 	return "", nil
 }

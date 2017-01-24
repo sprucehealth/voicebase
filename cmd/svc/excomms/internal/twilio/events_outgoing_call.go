@@ -224,18 +224,17 @@ func processOutgoingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 		return "", nil
 	}
 
-	conc.Go(func() {
-		if err := sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
-			FromChannelID: cr.Source.String(),
-			ToChannelID:   cr.Destination.String(),
-			Direction:     excomms.PublishedExternalMessage_OUTBOUND,
-			Timestamp:     uint64(time.Now().Unix()),
-			Type:          excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT,
-			Item:          cet,
-		}); err != nil {
-			golog.Errorf(err.Error())
-		}
-	})
+	// synchronously publish the message to the SNS topic to ensure that it is guaranteed to be processed.
+	if err := sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
+		FromChannelID: cr.Source.String(),
+		ToChannelID:   cr.Destination.String(),
+		Direction:     excomms.PublishedExternalMessage_OUTBOUND,
+		Timestamp:     uint64(time.Now().Unix()),
+		Type:          excomms.PublishedExternalMessage_OUTGOING_CALL_EVENT,
+		Item:          cet,
+	}); err != nil {
+		return "", errors.Errorf("unable to publish message to sns topic: %s", err.Error())
+	}
 
 	return "", nil
 }

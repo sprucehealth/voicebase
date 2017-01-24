@@ -13,7 +13,6 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
-	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/phone"
@@ -112,52 +111,49 @@ func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 
 		// only consider the call answered if the call has been active for more than 2 seconds for the patient
 		if incomingCall.Answered && eh.clock.Now().Sub(*incomingCall.AnsweredTime) > 2*time.Second {
-			conc.Go(func() {
-				durationInSeconds := params.CallDuration
-				if incomingCall.AnsweredTime != nil {
-					durationInSeconds = uint32(eh.clock.Now().Sub(*incomingCall.AnsweredTime).Seconds())
-				}
+			durationInSeconds := params.CallDuration
+			if incomingCall.AnsweredTime != nil {
+				durationInSeconds = uint32(eh.clock.Now().Sub(*incomingCall.AnsweredTime).Seconds())
+			}
 
-				if err := sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
-					FromChannelID: params.From,
-					ToChannelID:   params.To,
-					Timestamp:     uint64(eh.clock.Now().Unix()),
-					Direction:     excomms.PublishedExternalMessage_INBOUND,
-					Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
-					Item: &excomms.PublishedExternalMessage_Incoming{
-						Incoming: &excomms.IncomingCallEventItem{
-							Type:              excomms.IncomingCallEventItem_ANSWERED,
-							DurationInSeconds: durationInSeconds,
-						},
+			// synchronously publish the message to the SNS topic to ensure that it is guaranteed to be processed.
+			if err := sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
+				FromChannelID: params.From,
+				ToChannelID:   params.To,
+				Timestamp:     uint64(eh.clock.Now().Unix()),
+				Direction:     excomms.PublishedExternalMessage_INBOUND,
+				Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
+				Item: &excomms.PublishedExternalMessage_Incoming{
+					Incoming: &excomms.IncomingCallEventItem{
+						Type:              excomms.IncomingCallEventItem_ANSWERED,
+						DurationInSeconds: durationInSeconds,
 					},
-				}); err != nil {
-					golog.Errorf(err.Error())
-				}
-			})
+				},
+			}); err != nil {
+				return "", errors.Errorf("unable to publish message to sns topic for call %s: %s", params.CallSID, err)
+			}
 
 			trackInboundCall(eh, params.CallSID, "answered")
 		} else {
-			conc.Go(func() {
 
-				// check if send all calls to voicemail is turned on for organization in which case
-				// don't log missed call
-				sendAllCallsToVoicemailValue, err := settings.GetBooleanValue(context.Background(), eh.settings, &settings.GetValuesRequest{
-					NodeID: incomingCall.OrganizationID,
-					Keys: []*settings.ConfigKey{
-						{
-							Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
-							Subkey: params.To,
-						},
+			// check if send all calls to voicemail is turned on for organization in which case
+			// don't log missed call
+			sendAllCallsToVoicemailValue, err := settings.GetBooleanValue(context.Background(), eh.settings, &settings.GetValuesRequest{
+				NodeID: incomingCall.OrganizationID,
+				Keys: []*settings.ConfigKey{
+					{
+						Key:    excommsSettings.ConfigKeySendCallsToVoicemail,
+						Subkey: params.To,
 					},
-				})
-				if err != nil {
-					golog.Errorf("Unable to get %s value for %s: %s", excommsSettings.ConfigKeySendCallsToVoicemail, incomingCall.OrganizationID, err)
-					return
-				} else if sendAllCallsToVoicemailValue.Value {
-					// dont track missed calls
-					return
-				}
+				},
+			})
+			if err != nil {
+				golog.Errorf("Unable to get %s value for %s: %s", excommsSettings.ConfigKeySendCallsToVoicemail, incomingCall.OrganizationID, err)
+			}
 
+			// only track missed call events if send all calls to voicemail is off.
+			if !sendAllCallsToVoicemailValue.Value {
+				// synchronously publish the message to the SNS topic to ensure that it is guaranteed to be processed.
 				if err := sns.Publish(eh.sns, eh.externalMessageTopic, &excomms.PublishedExternalMessage{
 					FromChannelID: params.From,
 					ToChannelID:   params.To,
@@ -170,9 +166,9 @@ func processIncomingCallStatus(ctx context.Context, params *rawmsg.TwilioParams,
 						},
 					},
 				}); err != nil {
-					golog.Errorf(err.Error())
+					return "", errors.Errorf("unable to publish to sns topic for call %s: %s", params.CallSID, err)
 				}
-			})
+			}
 			trackInboundCall(eh, params.CallSID, "missed-call")
 		}
 	}
@@ -621,13 +617,13 @@ func processVoicemail(ctx context.Context, params *rawmsg.TwilioParams, eh *even
 	}
 	trackInboundCall(eh, params.CallSID, "voicemail")
 
-	conc.Go(func() {
-		if err := sns.Publish(eh.sns, eh.incomingRawMsgTopic, &sns.IncomingRawMessageNotification{
-			ID: rawMessageID,
-		}); err != nil {
-			golog.Errorf(err.Error())
-		}
-	})
+	// synchronously publish the message to the SNS topic to guarantee that it is processed and not
+	// skipped in the event that SNS is down.
+	if err := sns.Publish(eh.sns, eh.incomingRawMsgTopic, &sns.IncomingRawMessageNotification{
+		ID: rawMessageID,
+	}); err != nil {
+		return "", errors.Errorf("unable to publish to sns topic for call %s: %s", params.CallSID, err)
+	}
 
 	return "", nil
 }
