@@ -1,18 +1,20 @@
 package hint
 
 type Client struct {
-	Patient PatientClient
-	OAuth   OAuthClient
-	Partner PartnerClient
+	Patient      PatientClient
+	OAuth        OAuthClient
+	Partner      PartnerClient
+	Practitioner PractitionerClient
 }
 
 var defaultClient = getC()
 
 func getC() *Client {
 	return &Client{
-		Patient: &patientClient{B: GetBackend(), Key: Key},
-		OAuth:   &oauthClient{B: GetBackend(), Key: Key},
-		Partner: &partnerClient{B: GetBackend(), Key: Key},
+		Patient:      &patientClient{B: GetBackend(), Key: Key},
+		OAuth:        &oauthClient{B: GetBackend(), Key: Key},
+		Partner:      &partnerClient{B: GetBackend(), Key: Key},
+		Practitioner: &practitionerClient{B: GetBackend(), Key: Key},
 	}
 }
 
@@ -29,6 +31,11 @@ func SetOAuthClient(c OAuthClient) {
 // SetPartnerClient enables caller to provide a particular implementation of the partner client for mocking purposes.
 func SetPartnerClient(c PartnerClient) {
 	defaultClient.Partner = c
+}
+
+// SetPractitionerClient enables caller to provide a particular implementation of the practitioner client for mocking purposes.
+func SetPractitionerClient(c PractitionerClient) {
+	defaultClient.Practitioner = c
 }
 
 // NewPatient creates a new patient based on the params.
@@ -70,4 +77,9 @@ func GetPartner() (*Partner, error) {
 // UpdatePartner enables updating partner information and returns the updated partner.
 func UpdatePartner(params *PartnerParams) (*Partner, error) {
 	return defaultClient.Partner.Update(params)
+}
+
+// ListAllPractitioner lists all practitioners part of the practice.
+func ListAllPractitioners(practiceKey string) ([]*Practitioner, error) {
+	return defaultClient.Practitioner.List(practiceKey)
 }

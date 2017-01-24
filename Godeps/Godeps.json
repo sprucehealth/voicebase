@@ -285,7 +285,7 @@
 		},
 		{
 			"ImportPath": "github.com/sprucehealth/go-hint",
-			"Rev": "66b76af583576ae53d4e1ca24223a1b893f6e467"
+			"Rev": "610d88f1968a20bc925a41663b6d68e027f8ed72"
 		},
 		{
 			"ImportPath": "github.com/dustin/go-humanize",
