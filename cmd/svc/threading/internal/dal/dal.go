@@ -245,6 +245,23 @@ type DAL interface {
 	TriggeredMessageItemsForTriggeredMessage(ctx context.Context, triggeredMessageID models.TriggeredMessageID, opts ...QueryOption) ([]*models.TriggeredMessageItem, error)
 	DeleteTriggeredMessageItem(ctx context.Context, id models.TriggeredMessageItemID) (int64, error)
 	DeleteTriggeredMessageItemsForTriggeredMessage(ctx context.Context, id models.TriggeredMessageID) (int64, error)
+
+	// Batch Jobs
+	CreateBatchJobs(ctx context.Context, ms []*models.BatchJob) error
+	BatchJob(ctx context.Context, id models.BatchJobID, opts ...QueryOption) (*models.BatchJob, error)
+	BatchJobsCompletedBefore(ctx context.Context, completed time.Time, opts ...QueryOption) ([]*models.BatchJob, error)
+	BatchJobsForRequestingEntity(ctx context.Context, entityID string, opts ...QueryOption) ([]*models.BatchJob, error)
+	UpdateBatchJob(ctx context.Context, id models.BatchJobID, update *models.BatchJobUpdate) (int64, error)
+	DeleteBatchJob(ctx context.Context, id models.BatchJobID) (int64, error)
+
+	// Batch Tasks
+	CreateBatchTasks(ctx context.Context, ms []*models.BatchTask) error
+	BatchTask(ctx context.Context, id models.BatchTaskID, opts ...QueryOption) (*models.BatchTask, error)
+	BatchTasksAvailableInStatus(ctx context.Context, status models.BatchTaskStatus, maxTasks uint64, opts ...QueryOption) ([]*models.BatchTask, error)
+	UpdateBatchTask(ctx context.Context, id models.BatchTaskID, update *models.BatchTaskUpdate) (int64, error)
+	DeleteBatchTask(ctx context.Context, id models.BatchTaskID) (int64, error)
+	BatchJobTasksInStatus(ctx context.Context, id models.BatchJobID, status models.BatchTaskStatus, opts ...QueryOption) ([]*models.BatchTask, error)
+	LeaseBatchTasks(ctx context.Context, ids []models.BatchTaskID, leaseDuration time.Duration) (int64, error)
 }
 
 // New returns an initialized instance of dal

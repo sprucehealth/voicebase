@@ -79,3 +79,19 @@ func (m *ResourceAccessor) CloneAttachments(ctx context.Context, req *threading.
 	}
 	return rets[0].(*threading.CloneAttachmentsResponse), mock.SafeError(rets[1])
 }
+
+func (m *ResourceAccessor) BatchJobs(ctx context.Context, req *threading.BatchJobsRequest) (*threading.BatchJobsResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.BatchJobsResponse), mock.SafeError(rets[1])
+}
+
+func (m *ResourceAccessor) BatchPostMessages(ctx context.Context, req *threading.BatchPostMessagesRequest) (*threading.BatchPostMessagesResponse, error) {
+	rets := m.Record(req)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*threading.BatchPostMessagesResponse), mock.SafeError(rets[1])
+}

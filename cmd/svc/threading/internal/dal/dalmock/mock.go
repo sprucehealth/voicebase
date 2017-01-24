@@ -602,6 +602,110 @@ func (dl *DAL) DeleteTriggeredMessageItemsForTriggeredMessage(ctx context.Contex
 	return rets[0].(int64), mock.SafeError(rets[1])
 }
 
+func (dl *DAL) CreateBatchJobs(ctx context.Context, ms []*models.BatchJob) error {
+	rets := dl.Expector.Record(ms)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[1])
+}
+
+func (dl *DAL) BatchJob(ctx context.Context, id models.BatchJobID, opts ...dal.QueryOption) (*models.BatchJob, error) {
+	rets := dl.Expector.Record(id, optsToInterfaces(opts))
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*models.BatchJob), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) BatchJobsCompletedBefore(ctx context.Context, completed time.Time, opts ...dal.QueryOption) ([]*models.BatchJob, error) {
+	rets := dl.Expector.Record(completed, optsToInterfaces(opts))
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*models.BatchJob), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) BatchJobsForRequestingEntity(ctx context.Context, entityID string, opts ...dal.QueryOption) ([]*models.BatchJob, error) {
+	rets := dl.Expector.Record(entityID, optsToInterfaces(opts))
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*models.BatchJob), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) UpdateBatchJob(ctx context.Context, id models.BatchJobID, update *models.BatchJobUpdate) (int64, error) {
+	rets := dl.Expector.Record(id, update)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) DeleteBatchJob(ctx context.Context, id models.BatchJobID) (int64, error) {
+	rets := dl.Expector.Record(id)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) CreateBatchTasks(ctx context.Context, ms []*models.BatchTask) error {
+	rets := dl.Expector.Record(ms)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[1])
+}
+
+func (dl *DAL) BatchTask(ctx context.Context, id models.BatchTaskID, opts ...dal.QueryOption) (*models.BatchTask, error) {
+	rets := dl.Expector.Record(id, optsToInterfaces(opts))
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*models.BatchTask), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) BatchTasksAvailableInStatus(ctx context.Context, status models.BatchTaskStatus, maxTasks uint64, opts ...dal.QueryOption) ([]*models.BatchTask, error) {
+	rets := dl.Expector.Record(status, maxTasks, optsToInterfaces(opts))
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*models.BatchTask), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) UpdateBatchTask(ctx context.Context, id models.BatchTaskID, update *models.BatchTaskUpdate) (int64, error) {
+	rets := dl.Expector.Record(id, update)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) DeleteBatchTask(ctx context.Context, id models.BatchTaskID) (int64, error) {
+	rets := dl.Expector.Record(id)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) BatchJobTasksInStatus(ctx context.Context, id models.BatchJobID, status models.BatchTaskStatus, opts ...dal.QueryOption) ([]*models.BatchTask, error) {
+	rets := dl.Expector.Record(id, status, optsToInterfaces(opts))
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].([]*models.BatchTask), mock.SafeError(rets[1])
+}
+
+func (dl *DAL) LeaseBatchTasks(ctx context.Context, ids []models.BatchTaskID, leaseDuration time.Duration) (int64, error) {
+	rets := dl.Expector.Record(ids, leaseDuration)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+	return rets[0].(int64), mock.SafeError(rets[1])
+}
+
 func optsToInterfaces(opts []dal.QueryOption) []interface{} {
 	ifs := make([]interface{}, len(opts))
 	for i, o := range opts {

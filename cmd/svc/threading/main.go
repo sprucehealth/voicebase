@@ -222,6 +222,14 @@ func (wc workerClient) PostMessage(ctx context.Context, req *threading.PostMessa
 	return wc.srv.PostMessage(ctx, req)
 }
 
+func (wc workerClient) PostMessages(ctx context.Context, req *threading.PostMessagesRequest, opts ...grpc.CallOption) (*threading.PostMessagesResponse, error) {
+	return wc.srv.PostMessages(ctx, req)
+}
+
+func (wc workerClient) CloneAttachments(ctx context.Context, req *threading.CloneAttachmentsRequest, opts ...grpc.CallOption) (*threading.CloneAttachmentsResponse, error) {
+	return wc.srv.CloneAttachments(ctx, req)
+}
+
 // subscriberClient allows using the server directly as a client. avoids the worker from having to make calls out and back in
 // which would introduce a weird start-time dependency due to running in the same process.
 type subscriberClient struct {

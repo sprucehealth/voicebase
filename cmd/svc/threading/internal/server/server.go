@@ -1113,7 +1113,7 @@ func (s *threadsServer) postMessage(
 		return nil, nil, errors.Trace(err)
 	}
 
-	if err := claimAttachments(ctx, s.mediaClient, s.paymentsClient, threadID, req.Attachments); err != nil {
+	if err := claimAttachments(ctx, s.mediaClient, s.paymentsClient, s.careClient, threadID, req.Attachments); err != nil {
 		return nil, nil, errors.Trace(err)
 	}
 
@@ -1734,7 +1734,7 @@ func (s *threadsServer) UpdateMessage(ctx context.Context, in *threading.UpdateM
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	if err := claimAttachments(ctx, s.mediaClient, s.paymentsClient, item.ThreadID, req.Attachments); err != nil {
+	if err := claimAttachments(ctx, s.mediaClient, s.paymentsClient, s.careClient, item.ThreadID, req.Attachments); err != nil {
 		return nil, errors.Trace(err)
 	}
 

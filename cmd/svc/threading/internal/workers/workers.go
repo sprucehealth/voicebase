@@ -15,6 +15,7 @@ const workerErrMetricName = "ThreadingWorkerError"
 type WorkerThreadClient interface {
 	setupThreadClient
 	scheduledMessageThreadClient
+	batchTasksThreadClient
 }
 
 // Workers collection of all workers used by the Threading system
@@ -38,5 +39,6 @@ func New(
 	}
 	w.AddWorker(newSetupThreadWorker(sqs, threadingCli, eventQueueURL))
 	w.AddWorker(worker.NewRepeat(time.Minute, w.processPendingScheduledMessage))
+	w.AddWorker(worker.NewRepeat(time.Second*5, w.processPendingBatchTasks))
 	return w
 }

@@ -15,10 +15,12 @@ import (
 
 // Expose functionality from the errors pkg for convenience
 var (
+	Cause  = errors.Cause
+	Errorf = errors.Errorf
 	New    = errors.New
 	Trace  = errors.Trace
-	Errorf = errors.Errorf
-	Cause  = errors.Cause
+	Wrap   = errors.Wrap
+	Wrapf  = errors.Wrapf
 )
 
 type ErrorType string

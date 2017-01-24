@@ -1144,3 +1144,31 @@ func profileTitle(ctx context.Context, ram raccess.ResourceAccessor, p *director
 	}
 	return ent.Info.DisplayName
 }
+
+// TODO: This currently only interprets the threading service batch job as an in flight request.
+// In the future we will need to have it accept multiple inputs or move the request tracker up a level and unify the interface
+func transformRequestStatusToResponse(ctx context.Context, bj *threading.BatchJob) *models.RequestStatus {
+	return &models.RequestStatus{
+		ID:                 bj.ID,
+		Type:               bj.Type.String(),
+		Status:             transformBatchJobStatusToRequestStatus(bj.Status),
+		Description:        fmt.Sprintf("%d tasks requested, %d completed, %d completed with error", bj.TasksRequested, bj.TasksCompleted, bj.TasksErrored),
+		Errors:             bj.Errors,
+		TasksRequested:     bj.TasksRequested,
+		TasksCompleted:     bj.TasksCompleted,
+		TasksErrored:       bj.TasksErrored,
+		CreatedTimestamp:   bj.CreatedTimestamp,
+		CompletedTimestamp: bj.CompletedTimestamp,
+	}
+}
+
+func transformBatchJobStatusToRequestStatus(bs threading.BatchJob_Status) string {
+	switch bs {
+	case threading.BATCH_JOB_STATUS_PENDING:
+		return requestStatusPending
+	case threading.BATCH_JOB_STATUS_COMPLETE:
+		return requestStatusComplete
+	}
+	golog.Errorf("Unknown BatchJob status %s", bs)
+	return ""
+}

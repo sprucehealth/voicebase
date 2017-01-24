@@ -110,6 +110,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 		"associateInvite":                     associateInviteMutation,
 		"authenticate":                        authenticateMutation,
 		"authenticateWithCode":                authenticateWithCodeMutation,
+		"batchPostMessages":                   batchPostMessagesMutation,
 		"callEntity":                          callEntityMutation,
 		"checkPasswordResetToken":             checkPasswordResetTokenMutation,
 		"checkVerificationCode":               checkVerificationCodeMutation,

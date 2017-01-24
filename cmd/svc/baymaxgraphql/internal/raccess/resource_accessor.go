@@ -89,6 +89,8 @@ type ResourceAccessor interface {
 	AuthenticateLogin(ctx context.Context, email, password string, duration auth.TokenDuration) (*auth.AuthenticateLoginResponse, error)
 	AuthenticateLoginWithCode(ctx context.Context, token, code string, duration auth.TokenDuration) (*auth.AuthenticateLoginWithCodeResponse, error)
 	AssertIsEntity(ctx context.Context, entityID string) (*directory.Entity, error)
+	BatchJobs(ctx context.Context, req *threading.BatchJobsRequest) (*threading.BatchJobsResponse, error)
+	BatchPostMessages(ctx context.Context, req *threading.BatchPostMessagesRequest) (*threading.BatchPostMessagesResponse, error)
 	CanPostMessage(ctx context.Context, threadID string) error
 	CarePlan(ctx context.Context, id string) (*care.CarePlan, error)
 	CheckPasswordResetToken(ctx context.Context, token string) (*auth.CheckPasswordResetTokenResponse, error)
@@ -805,7 +807,7 @@ func (m *resourceAccessor) SearchMedications(ctx context.Context, req *care.Sear
 }
 
 func (m *resourceAccessor) SendMessage(ctx context.Context, req *excomms.SendMessageRequest) error {
-	// Note: There is currentl no authorization required for this operation.
+	// Note: There is currently no authorization required for this operation.
 	// TODO: Should there be?
 	_, err := m.excomms.SendMessage(ctx, req)
 	if err != nil {
@@ -891,16 +893,18 @@ func (m *resourceAccessor) Threads(ctx context.Context, req *threading.ThreadsRe
 		return nil, err
 	}
 
-	var entityFound bool
-	for _, entity := range entities {
-		if entity.ID == req.ViewerEntityID {
-			entityFound = true
-			break
+	if req.ViewerEntityID != "" {
+		var entityFound bool
+		for _, entity := range entities {
+			if entity.ID == req.ViewerEntityID {
+				entityFound = true
+				break
+			}
 		}
-	}
 
-	if !entityFound {
-		return nil, errors.ErrNotAuthorized(ctx, req.ViewerEntityID)
+		if !entityFound {
+			return nil, errors.ErrNotAuthorized(ctx, req.ViewerEntityID)
+		}
 	}
 
 	res, err := m.threading.Threads(ctx, req)

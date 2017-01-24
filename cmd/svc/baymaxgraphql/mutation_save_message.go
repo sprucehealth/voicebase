@@ -10,9 +10,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/raccess"
 	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/bml"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
-	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/threading"
 	"github.com/sprucehealth/graphql"
@@ -157,7 +155,7 @@ var saveMessageMutation = &graphql.Field{
 			return nil, errors.InternalError(ctx, err)
 		}
 
-		attachments, carePlans, err := processIncomingAttachments(ctx, ram, svc, ent, in.OrganizationID, in.Message.Attachments, nil)
+		attachments, err := processIncomingAttachments(ctx, ram, svc, ent, in.OrganizationID, in.Message.Attachments, nil)
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
@@ -190,18 +188,11 @@ var saveMessageMutation = &graphql.Field{
 			if in.Shared {
 				req.OwnerEntityID = in.OrganizationID
 			}
-			if createSavedMessageRes, err := ram.CreateSavedMessage(ctx, in.OrganizationID, req); err != nil {
+			createSavedMessageRes, err := ram.CreateSavedMessage(ctx, in.OrganizationID, req)
+			if err != nil {
 				return nil, errors.Trace(err)
-			} else {
-				savedMessage = createSavedMessageRes.SavedMessage
 			}
-		}
-
-		// Flag care plans as attached to the saved message
-		for _, cp := range carePlans {
-			if _, err := ram.UpdateCarePlan(ctx, cp, &care.UpdateCarePlanRequest{ID: cp.ID, ParentID: savedMessage.ID}); err != nil {
-				golog.Errorf("Failed to update care plan %s for saved message %s: %s", cp.ID, savedMessage.ID, err)
-			}
+			savedMessage = createSavedMessageRes.SavedMessage
 		}
 
 		attachmentProperties := attachmentsIncluded(attachments)

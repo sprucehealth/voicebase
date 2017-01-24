@@ -15,7 +15,6 @@ import (
 	"github.com/sprucehealth/backend/libs/analytics"
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/caremessenger/deeplink"
-	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/gqldecode"
 	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -304,8 +303,7 @@ var postMessageMutation = &graphql.Field{
 			UUID:         in.Msg.UUID,
 		}
 
-		var carePlans []*care.CarePlan
-		req.Message, carePlans, err = transformRequestToMessagePost(ctx, svc, ram, &in.Msg, thr, ent, primaryEntity)
+		req.Message, err = transformRequestToMessagePost(ctx, svc, ram, &in.Msg, thr, ent, primaryEntity)
 		if e, ok := errors.Cause(err).(errInvalidAttachment); ok {
 			return &postMessageOutput{
 				Success:      false,
@@ -320,16 +318,6 @@ var postMessageMutation = &graphql.Field{
 		if err != nil {
 			return nil, errors.InternalError(ctx, err)
 		}
-
-		// Flag care plans as submitted and attached to this message
-		for _, cp := range carePlans {
-			if err := ram.SubmitCarePlan(ctx, cp, pmres.Item.ID); err != nil {
-				// Don't return an error here since it's too late to do much about this. Best to let the
-				// mutation succeed and log these to be fixed up by hand.
-				golog.Errorf("[MANUAL_INTERVENTION] Failed to submit care plan %s for thread item %s: %s", cp.ID, pmres.Item.ID, err)
-			}
-		}
-
 		trackPostMessage(ctx, thr, req)
 
 		it, err := transformThreadItemToResponse(pmres.Item, req.UUID, svc.webDomain, svc.mediaAPIDomain)
@@ -361,14 +349,14 @@ func transformRequestToMessagePost(
 	thr *threading.Thread,
 	ent *directory.Entity,
 	primaryEntity *directory.Entity) (
-	*threading.MessagePost, []*care.CarePlan, error) {
+	*threading.MessagePost, error) {
 
 	// Parse text and render as plain text so we can build a summary.
 	textBML, err := bml.Parse(in.Text)
 	if e, ok := err.(bml.ErrParseFailure); ok {
-		return nil, nil, fmt.Errorf("failed to parse text at pos %d: %s", e.Offset, e.Reason)
+		return nil, fmt.Errorf("failed to parse text at pos %d: %s", e.Offset, e.Reason)
 	} else if err != nil {
-		return nil, nil, errors.New("text is not valid markup")
+		return nil, errors.New("text is not valid markup")
 	}
 
 	// Validate referenced entities and covert tag to plain text for any that aren't allowed
@@ -383,11 +371,11 @@ func transformRequestToMessagePost(
 	if hasRefs {
 		threadType, err := transformThreadTypeToResponse(thr.Type)
 		if err != nil {
-			return nil, nil, errors.Trace(err)
+			return nil, errors.Trace(err)
 		}
 		refEntities, err := addressableEntitiesForThread(ctx, ram, thr.OrganizationID, thr.ID, threadType)
 		if err != nil {
-			return nil, nil, errors.Trace(err)
+			return nil, errors.Trace(err)
 		}
 		refEntitiesMap := make(map[string]*directory.Entity, len(refEntities))
 		for _, e := range refEntities {
@@ -406,7 +394,7 @@ func transformRequestToMessagePost(
 						r.Text = e.Info.DisplayName
 					}
 				default:
-					return nil, nil, errors.Errorf("unknown reference type %s", r.Type)
+					return nil, errors.Errorf("unknown reference type %s", r.Type)
 				}
 			}
 		}
@@ -415,13 +403,13 @@ func transformRequestToMessagePost(
 	plainText, err := textBML.PlainText()
 	if err != nil {
 		// Shouldn't fail here since the parsing should have done validation
-		return nil, nil, errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
 	summary := summaryForEntityMessage(ent, plainText)
 
-	attachments, carePlans, err := processIncomingAttachments(ctx, ram, svc, ent, thr.OrganizationID, in.Attachments, thr)
+	attachments, err := processIncomingAttachments(ctx, ram, svc, ent, thr.OrganizationID, in.Attachments, thr)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	msg := &threading.MessagePost{
@@ -441,7 +429,7 @@ func transformRequestToMessagePost(
 
 	title, err := populateMessageDestinationAndBuildTitle(msg, in.Destinations, thr, ent, primaryEntity)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if len(title) == 0 {
@@ -467,10 +455,10 @@ func transformRequestToMessagePost(
 
 	titleStr, err := title.Format()
 	if err != nil {
-		return nil, nil, errors.Errorf("invalid title BML %+v: %s", title, err)
+		return nil, errors.Errorf("invalid title BML %+v: %s", title, err)
 	}
 	msg.Title = titleStr
-	return msg, carePlans, nil
+	return msg, nil
 }
 
 func trackPostMessage(ctx context.Context, thr *threading.Thread, req *threading.PostMessageRequest) {
@@ -622,9 +610,7 @@ func (e errInvalidAttachment) Error() string {
 	return string(e)
 }
 
-func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccessor, svc *service, ent *directory.Entity, orgID string, attachs []attachmentInput, thread *threading.Thread) ([]*threading.Attachment, []*care.CarePlan, error) {
-	// Need to track the care plans so we can flag them as submitted after posting
-	var carePlans []*care.CarePlan
+func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccessor, svc *service, ent *directory.Entity, orgID string, attachs []attachmentInput, thread *threading.Thread) ([]*threading.Attachment, error) {
 	attachments := make([]*threading.Attachment, 0, len(attachs))
 	for _, mAttachment := range attachs {
 		// Backfill the attachmentID from the deprecated mediaID
@@ -635,14 +621,14 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 		// TODO: Verify that the media at the ID exists
 
 		if thread != nil && !allowAttachment(thread, mAttachment.Type) {
-			return nil, nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot attach %s to thread of type %s", mAttachment.Type, thread.Type))
+			return nil, errors.ErrNotSupported(ctx, fmt.Errorf("Cannot attach %s to thread of type %s", mAttachment.Type, thread.Type))
 		}
 
 		var attachment *threading.Attachment
 		switch mAttachment.Type {
 		case attachmentTypeVisit:
 			if mAttachment.AttachmentID == "" {
-				return nil, nil, errors.Errorf("Missing ID for visit attachment")
+				return nil, errors.Errorf("Missing ID for visit attachment")
 			}
 
 			// ensure that the visit layout exists from which to create a visit
@@ -650,7 +636,7 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 				ID: mAttachment.AttachmentID,
 			})
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 
 			// create the visit from the visit layout
@@ -668,7 +654,7 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 			}
 			createVisitRes, err := ram.CreateVisit(ctx, createVisitReq)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 
 			attachment = &threading.Attachment{
@@ -689,12 +675,11 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 			// Make sure the care plan exists, the poster has access to it, and it hasn't yet been submitted
 			cp, err := ram.CarePlan(ctx, mAttachment.AttachmentID)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			if cp.Submitted {
-				return nil, nil, errInvalidAttachment("The attached care plan has already been submitted.")
+				return nil, errInvalidAttachment("The attached care plan has already been submitted.")
 			}
-			carePlans = append(carePlans, cp)
 
 			attachment = &threading.Attachment{
 				ContentID: mAttachment.AttachmentID,
@@ -713,7 +698,7 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 		case attachmentTypeImage:
 			info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
 			if err != nil {
-				return nil, nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
+				return nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
 			}
 			attachment = &threading.Attachment{
 				ContentID: mAttachment.AttachmentID,
@@ -730,7 +715,7 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 		case attachmentTypeAudio:
 			info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
 			if err != nil {
-				return nil, nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
+				return nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
 			}
 			attachment = &threading.Attachment{
 				ContentID: mAttachment.AttachmentID,
@@ -748,7 +733,7 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 		case attachmentTypeVideo:
 			info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
 			if err != nil {
-				return nil, nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
+				return nil, fmt.Errorf("Error while locating media info for %s: %s", mAttachment.AttachmentID, err)
 			}
 			attachment = &threading.Attachment{
 				ContentID: mAttachment.AttachmentID,
@@ -766,7 +751,7 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 		case attachmentTypeDocument:
 			info, err := ram.MediaInfo(ctx, mAttachment.AttachmentID)
 			if err != nil {
-				return nil, nil, fmt.Errorf("Error while locating media info for %s : %s", mAttachment.AttachmentID, err)
+				return nil, fmt.Errorf("Error while locating media info for %s : %s", mAttachment.AttachmentID, err)
 			}
 			attachment = &threading.Attachment{
 				ContentID: mAttachment.AttachmentID,
@@ -786,7 +771,7 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 				PaymentID: mAttachment.AttachmentID,
 			})
 			if err != nil {
-				return nil, nil, fmt.Errorf("Error while locating payment info for %s: %s", mAttachment.AttachmentID, err)
+				return nil, fmt.Errorf("Error while locating payment info for %s: %s", mAttachment.AttachmentID, err)
 			}
 			attachment = &threading.Attachment{
 				ContentID: mAttachment.AttachmentID,
@@ -800,9 +785,9 @@ func processIncomingAttachments(ctx context.Context, ram raccess.ResourceAccesso
 				},
 			}
 		default:
-			return nil, nil, fmt.Errorf("Unknown message attachment type %s", mAttachment.Type)
+			return nil, fmt.Errorf("Unknown message attachment type %s", mAttachment.Type)
 		}
 		attachments = append(attachments, attachment)
 	}
-	return attachments, carePlans, nil
+	return attachments, nil
 }

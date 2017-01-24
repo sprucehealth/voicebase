@@ -188,6 +188,7 @@ var queryType = graphql.NewObject(
 			"medicationSearch":                      medicationSearchQuery,
 			"paymentRequest":                        paymentRequestQuery,
 			"pendingCalls":                          pendingCallsQuery,
+			"requestStatus":                         requestStatusQuery,
 			"savedMessages":                         savedMessagesQuery,
 			"setting":                               settingsQuery,
 			"threadsSearch":                         threadsSearchQuery,

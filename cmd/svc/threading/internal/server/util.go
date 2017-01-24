@@ -10,6 +10,7 @@ import (
 	"github.com/sprucehealth/backend/libs/bml"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/textutil"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/directory"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/payments"
@@ -166,6 +167,17 @@ func paymentsIDsFromAttachments(as []*models.Attachment) []string {
 	return paymentIDs
 }
 
+func carePlanIDsFromAttachments(as []*models.Attachment) []string {
+	carePlanIDs := make([]string, 0, len(as))
+	for _, a := range as {
+		switch a := a.Data.(type) {
+		case *models.Attachment_CarePlan:
+			carePlanIDs = append(carePlanIDs, a.CarePlan.CarePlanID)
+		}
+	}
+	return carePlanIDs
+}
+
 func memberEntityIDsForNewThread(ttype threading.ThreadType, orgID, fromEntityID string, memberEntityIDs []string) ([]string, error) {
 	switch ttype {
 	case threading.THREAD_TYPE_EXTERNAL, threading.THREAD_TYPE_SECURE_EXTERNAL, threading.THREAD_TYPE_SETUP, threading.THREAD_TYPE_SUPPORT:
@@ -265,7 +277,7 @@ func isExternalEntity(e *directory.Entity) bool {
 }
 
 // NOTE: This should remain idempotent since it is called for both scheduling and posting a message
-func claimAttachments(ctx context.Context, mediaClient media.MediaClient, paymentsClient payments.PaymentsClient, threadID models.ThreadID, attachments []*models.Attachment) error {
+func claimAttachments(ctx context.Context, mediaClient media.MediaClient, paymentsClient payments.PaymentsClient, careClient care.CareClient, threadID models.ThreadID, attachments []*models.Attachment) error {
 	mediaIDs := mediaIDsFromAttachments(attachments)
 	if len(mediaIDs) > 0 {
 		// Before posting the actual message, map all the attached media to the thread
@@ -286,6 +298,14 @@ func claimAttachments(ctx context.Context, mediaClient media.MediaClient, paymen
 		if _, err := paymentsClient.SubmitPayment(ctx, &payments.SubmitPaymentRequest{
 			PaymentID: pID,
 			ThreadID:  threadID.String(),
+		}); err != nil {
+			return errors.Trace(err)
+		}
+	}
+	for _, cpID := range carePlanIDsFromAttachments(attachments) {
+		if _, err := careClient.SubmitCarePlan(ctx, &care.SubmitCarePlanRequest{
+			ID:       cpID,
+			ParentID: threadID.String(),
 		}); err != nil {
 			return errors.Trace(err)
 		}

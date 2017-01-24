@@ -3,7 +3,11 @@ package raccess
 import (
 	"context"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	"github.com/sprucehealth/backend/cmd/svc/baymaxgraphql/internal/errors"
+	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/svc/auth"
 	"github.com/sprucehealth/backend/svc/threading"
 )
@@ -95,4 +99,45 @@ func (m *resourceAccessor) ScheduledMessages(ctx context.Context, req *threading
 func (m *resourceAccessor) CloneAttachments(ctx context.Context, req *threading.CloneAttachmentsRequest) (*threading.CloneAttachmentsResponse, error) {
 	resp, err := m.threading.CloneAttachments(ctx, req)
 	return resp, errors.Trace(err)
+}
+
+func (m *resourceAccessor) BatchJobs(ctx context.Context, req *threading.BatchJobsRequest) (*threading.BatchJobsResponse, error) {
+	resp, err := m.threading.BatchJobs(ctx, req)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	var entityToAssert string
+	switch key := req.LookupKey.(type) {
+	case *threading.BatchJobsRequest_ID:
+		if len(resp.BatchJobs) != 0 {
+			entityToAssert = resp.BatchJobs[0].RequestingEntity
+		}
+	case *threading.BatchJobsRequest_RequestingEntity:
+		entityToAssert = key.RequestingEntity
+	default:
+		return nil, grpc.Errorf(codes.InvalidArgument, "Unknown lookup key type")
+	}
+	// Only the person who requested it should be able to see the status of a batch job for now
+	if _, err := m.AssertIsEntity(ctx, entityToAssert); err != nil {
+		return nil, errors.Trace(err)
+	}
+	return resp, nil
+}
+
+func (m *resourceAccessor) BatchPostMessages(ctx context.Context, req *threading.BatchPostMessagesRequest) (*threading.BatchPostMessagesResponse, error) {
+	// TODO: Figure out how to maybe do this a bit more efficiently. Lave for now since ACL service incoming
+	parallel := conc.NewParallel()
+	for _, pmr := range req.PostMessagesRequests {
+		parallel.Go(func() error {
+			return m.CanPostMessage(ctx, pmr.ThreadID)
+		})
+	}
+	if err := parallel.Wait(); err != nil {
+		return nil, errors.Trace(err)
+	}
+	resp, err := m.threading.BatchPostMessages(ctx, req)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return resp, nil
 }

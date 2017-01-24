@@ -6,6 +6,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/threading/internal/models"
 	"github.com/sprucehealth/backend/libs/errors"
+	"github.com/sprucehealth/backend/svc/care"
 	"github.com/sprucehealth/backend/svc/media"
 	"github.com/sprucehealth/backend/svc/threading"
 	"google.golang.org/grpc"
@@ -29,7 +30,6 @@ func (s *threadsServer) CreateSavedMessage(ctx context.Context, in *threading.Cr
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	mediaIDs := mediaIDsFromAttachments(attachments)
 
 	sm := &models.SavedMessage{
 		Title:           in.Title,
@@ -51,6 +51,8 @@ func (s *threadsServer) CreateSavedMessage(ctx context.Context, in *threading.Cr
 		return nil, errors.Trace(err)
 	}
 
+	// TODO: Unify this under claimAttachments
+	mediaIDs := mediaIDsFromAttachments(attachments)
 	if len(mediaIDs) > 0 {
 		_, err = s.mediaClient.ClaimMedia(ctx, &media.ClaimMediaRequest{
 			MediaIDs:  mediaIDs,
@@ -59,6 +61,18 @@ func (s *threadsServer) CreateSavedMessage(ctx context.Context, in *threading.Cr
 		})
 		if err != nil {
 			return nil, errors.Trace(err)
+		}
+	}
+	// TODO: Unify this under claimAttachments
+	carePlanIDs := carePlanIDsFromAttachments(attachments)
+	if len(carePlanIDs) > 0 {
+		for _, cpID := range carePlanIDs {
+			if _, err := s.careClient.SubmitCarePlan(ctx, &care.SubmitCarePlanRequest{
+				ID:       cpID,
+				ParentID: id.String(),
+			}); err != nil {
+				return nil, errors.Trace(err)
+			}
 		}
 	}
 

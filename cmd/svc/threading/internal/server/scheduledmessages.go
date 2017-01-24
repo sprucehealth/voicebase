@@ -42,7 +42,7 @@ func (s *threadsServer) CreateScheduledMessage(ctx context.Context, in *threadin
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	if err := claimAttachments(ctx, s.mediaClient, s.paymentsClient, threadID, req.Attachments); err != nil {
+	if err := claimAttachments(ctx, s.mediaClient, s.paymentsClient, s.careClient, threadID, req.Attachments); err != nil {
 		return nil, errors.Trace(err)
 	}
 	threadItem, err := dal.ThreadItemFromPostMessageRequest(ctx, req, s.clk)

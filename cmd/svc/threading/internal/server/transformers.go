@@ -776,3 +776,51 @@ func transformMediaID(id string) string {
 	}
 	return u.Path
 }
+
+func transformBatchJobToResponse(b *models.BatchJob, errs []string) (*threading.BatchJob, error) {
+	bt, err := transformBatchJobTypeToResponse(b.Type)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	bs, err := transformBatchJobStatusToResponse(b.Status)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	var completedTimestamp uint64
+	if b.Completed != nil {
+		completedTimestamp = uint64(b.Completed.Unix())
+	}
+	return &threading.BatchJob{
+		ID:                 b.ID.String(),
+		Type:               bt,
+		Status:             bs,
+		TasksRequested:     b.TasksRequested,
+		TasksCompleted:     b.TasksCompleted,
+		TasksErrored:       b.TasksErrored,
+		Errors:             errs,
+		CompletedTimestamp: completedTimestamp,
+		CreatedTimestamp:   uint64(b.Created.Unix()),
+		ModifiedTimestamp:  uint64(b.Modified.Unix()),
+		RequestingEntity:   b.RequestingEntity,
+	}, nil
+}
+
+// transformBatchJobTypeToResponse transforms the batch job type model to the repsonse
+func transformBatchJobTypeToResponse(bt models.BatchJobType) (threading.BatchJob_Type, error) {
+	switch bt {
+	case models.BatchJobTypeBatchPostMessages:
+		return threading.BATCH_JOB_TYPE_BATCH_POST_MESSAGES, nil
+	}
+	return threading.BATCH_JOB_TYPE_INVALID, errors.Errorf("unknown batch job type '%s'", bt)
+}
+
+// transformBatchJobStatusToResponse transforms the batch job status model to the repsonse
+func transformBatchJobStatusToResponse(bs models.BatchJobStatus) (threading.BatchJob_Status, error) {
+	switch bs {
+	case models.BatchJobStatusPending:
+		return threading.BATCH_JOB_STATUS_PENDING, nil
+	case models.BatchJobStatusComplete:
+		return threading.BATCH_JOB_STATUS_COMPLETE, nil
+	}
+	return threading.BATCH_JOB_STATUS_INVALID, errors.Errorf("unknown batch job status '%s'", bs)
+}

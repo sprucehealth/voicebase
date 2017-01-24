@@ -787,3 +787,286 @@ const (
 	TriggeredMessageKeyNewPatient  = "NEW_PATIENT"
 	TriggeredMessageKeyAwayMessage = "AWAY_MESSAGE"
 )
+
+// BatchJobIDPrefix represents the string that is attached to the beginning of these identifiers
+const BatchJobIDPrefix = "batchJob_"
+
+// NewBatchJobID returns a new BatchJobID.
+func NewBatchJobID() (BatchJobID, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return BatchJobID{}, errors.Trace(err)
+	}
+	return BatchJobID{
+		model.ObjectID{
+			Prefix:  BatchJobIDPrefix,
+			Val:     id,
+			IsValid: true,
+		},
+	}, nil
+}
+
+// EmptyBatchJobID returns an empty initialized ID
+func EmptyBatchJobID() BatchJobID {
+	return BatchJobID{
+		model.ObjectID{
+			Prefix:  BatchJobIDPrefix,
+			IsValid: false,
+		},
+	}
+}
+
+// ParseBatchJobID transforms an BatchJobID from it's string representation into the actual ID value
+func ParseBatchJobID(s string) (BatchJobID, error) {
+	id := EmptyBatchJobID()
+	err := id.UnmarshalText([]byte(s))
+	return id, errors.Trace(err)
+}
+
+// BatchJobID is the ID for a BatchJobID object
+type BatchJobID struct {
+	model.ObjectID
+}
+
+// BatchTaskIDPrefix represents the string that is attached to the beginning of these identifiers
+const BatchTaskIDPrefix = "batchTask_"
+
+// NewBatchTaskID returns a new BatchTaskID.
+func NewBatchTaskID() (BatchTaskID, error) {
+	id, err := idgen.NewID()
+	if err != nil {
+		return BatchTaskID{}, errors.Trace(err)
+	}
+	return BatchTaskID{
+		model.ObjectID{
+			Prefix:  BatchTaskIDPrefix,
+			Val:     id,
+			IsValid: true,
+		},
+	}, nil
+}
+
+// EmptyBatchTaskID returns an empty initialized ID
+func EmptyBatchTaskID() BatchTaskID {
+	return BatchTaskID{
+		model.ObjectID{
+			Prefix:  BatchTaskIDPrefix,
+			IsValid: false,
+		},
+	}
+}
+
+// ParseBatchTaskID transforms an BatchTaskID from it's string representation into the actual ID value
+func ParseBatchTaskID(s string) (BatchTaskID, error) {
+	id := EmptyBatchTaskID()
+	err := id.UnmarshalText([]byte(s))
+	return id, errors.Trace(err)
+}
+
+// BatchTaskID is the ID for a BatchTaskID object
+type BatchTaskID struct {
+	model.ObjectID
+}
+
+// BatchJobStatus represents the type associated with the status column of the batch_job table
+type BatchJobStatus string
+
+const (
+	// BatchJobStatusPending represents the PENDING state of the status field on a batch_job record
+	BatchJobStatusPending BatchJobStatus = "PENDING"
+	// BatchJobStatusComplete represents the COMPLETE state of the status field on a batch_job record
+	BatchJobStatusComplete BatchJobStatus = "COMPLETE"
+)
+
+// ParseBatchJobStatus converts a string into the correcponding enum value
+func ParseBatchJobStatus(s string) (BatchJobStatus, error) {
+	switch t := BatchJobStatus(strings.ToUpper(s)); t {
+	case BatchJobStatusPending, BatchJobStatusComplete:
+		return t, nil
+	}
+	return BatchJobStatus(""), errors.Trace(fmt.Errorf("Unknown status:%s", s))
+}
+
+func (t BatchJobStatus) String() string {
+	return string(t)
+}
+
+// Value implements sql/driver.Valr to allow it to be used in an sql query
+func (t BatchJobStatus) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
+// Scan allows for scanning of BatchJobStatus from a database conforming to the sql.Scanner interface
+func (t *BatchJobStatus) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParseBatchJobStatus(ts)
+	case []byte:
+		*t, err = ParseBatchJobStatus(string(ts))
+	}
+	return errors.Trace(err)
+}
+
+// BatchJobType represents the type associated with the type column of the batch_job table
+type BatchJobType string
+
+const (
+	// BatchJobTypeBatchPostMessages represents the BATCH_POST_MESSAGES state of the type field on a batch_job record
+	BatchJobTypeBatchPostMessages BatchJobType = "BATCH_POST_MESSAGES"
+)
+
+// ParseBatchJobType converts a string into the correcponding enum value
+func ParseBatchJobType(s string) (BatchJobType, error) {
+	switch t := BatchJobType(strings.ToUpper(s)); t {
+	case BatchJobTypeBatchPostMessages:
+		return t, nil
+	}
+	return BatchJobType(""), errors.Trace(fmt.Errorf("Unknown type:%s", s))
+}
+
+func (t BatchJobType) String() string {
+	return string(t)
+}
+
+// Value implements sql/driver.Valr to allow it to be used in an sql query
+func (t BatchJobType) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
+// Scan allows for scanning of BatchJobType from a database conforming to the sql.Scanner interface
+func (t *BatchJobType) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParseBatchJobType(ts)
+	case []byte:
+		*t, err = ParseBatchJobType(string(ts))
+	}
+	return errors.Trace(err)
+}
+
+// BatchTaskType represents the type associated with the type column of the batch_task table
+type BatchTaskType string
+
+const (
+	// BatchTaskTypePostMessages represents the POST_MESSAGES state of the type field on a batch_task record
+	BatchTaskTypePostMessages BatchTaskType = "POST_MESSAGES"
+)
+
+// ParseBatchTaskType converts a string into the correcponding enum value
+func ParseBatchTaskType(s string) (BatchTaskType, error) {
+	switch t := BatchTaskType(strings.ToUpper(s)); t {
+	case BatchTaskTypePostMessages:
+		return t, nil
+	}
+	return BatchTaskType(""), errors.Trace(fmt.Errorf("Unknown type:%s", s))
+}
+
+func (t BatchTaskType) String() string {
+	return string(t)
+}
+
+// Value implements sql/driver.Valr to allow it to be used in an sql query
+func (t BatchTaskType) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
+// Scan allows for scanning of BatchTaskType from a database conforming to the sql.Scanner interface
+func (t *BatchTaskType) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParseBatchTaskType(ts)
+	case []byte:
+		*t, err = ParseBatchTaskType(string(ts))
+	}
+	return errors.Trace(err)
+}
+
+// BatchTaskStatus represents the type associated with the status column of the batch_task table
+type BatchTaskStatus string
+
+const (
+	// BatchTaskStatusPending represents the PENDING state of the status field on a batch_task record
+	BatchTaskStatusPending BatchTaskStatus = "PENDING"
+	// BatchTaskStatusComplete represents the COMPLETE state of the status field on a batch_task record
+	BatchTaskStatusComplete BatchTaskStatus = "COMPLETE"
+	// BatchTaskStatusError represents the ERROR state of the status field on a batch_task record
+	BatchTaskStatusError BatchTaskStatus = "ERROR"
+)
+
+// ParseBatchTaskStatus converts a string into the correcponding enum value
+func ParseBatchTaskStatus(s string) (BatchTaskStatus, error) {
+	switch t := BatchTaskStatus(strings.ToUpper(s)); t {
+	case BatchTaskStatusPending, BatchTaskStatusComplete, BatchTaskStatusError:
+		return t, nil
+	}
+	return BatchTaskStatus(""), errors.Trace(fmt.Errorf("Unknown status:%s", s))
+}
+
+func (t BatchTaskStatus) String() string {
+	return string(t)
+}
+
+// Value implements sql/driver.Valr to allow it to be used in an sql query
+func (t BatchTaskStatus) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
+// Scan allows for scanning of BatchTaskStatus from a database conforming to the sql.Scanner interface
+func (t *BatchTaskStatus) Scan(src interface{}) error {
+	var err error
+	switch ts := src.(type) {
+	case string:
+		*t, err = ParseBatchTaskStatus(ts)
+	case []byte:
+		*t, err = ParseBatchTaskStatus(string(ts))
+	}
+	return errors.Trace(err)
+}
+
+// BatchTask represents a batch_task record
+type BatchTask struct {
+	Status         BatchTaskStatus
+	Data           []byte
+	Error          string
+	Completed      *time.Time
+	Created        time.Time
+	Modified       time.Time
+	ID             BatchTaskID
+	BatchJobID     BatchJobID
+	Type           BatchTaskType
+	AvailableAfter time.Time
+}
+
+// BatchTaskUpdate represents the mutable aspects of a batch_task record
+type BatchTaskUpdate struct {
+	Status         *BatchTaskStatus
+	Error          *string
+	Completed      *time.Time
+	AvailableAfter *time.Time
+}
+
+// BatchJob represents a batch_job record
+type BatchJob struct {
+	Completed        *time.Time
+	ID               BatchJobID
+	Status           BatchJobStatus
+	TasksRequested   uint64
+	TasksErrored     uint64
+	Type             BatchJobType
+	TasksCompleted   uint64
+	Created          time.Time
+	Modified         time.Time
+	RequestingEntity string
+}
+
+// BatchJobUpdate represents the mutable aspects of a batch_job record
+type BatchJobUpdate struct {
+	TasksCompleted *uint64
+	Status         *BatchJobStatus
+	TasksRequested *uint64
+	TasksErrored   *uint64
+	Completed      *time.Time
+}

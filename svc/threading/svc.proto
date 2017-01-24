@@ -871,7 +871,55 @@ message CloneAttachmentsResponse {
 	repeated Attachment attachments = 1;
 }
 
+message BatchJob {
+	enum Type {
+		BATCH_JOB_TYPE_INVALID = 0;
+		BATCH_JOB_TYPE_BATCH_POST_MESSAGES = 1;
+	}
+	enum Status {
+		BATCH_JOB_STATUS_INVALID = 0;
+		BATCH_JOB_STATUS_PENDING = 1;
+		BATCH_JOB_STATUS_COMPLETE = 2;
+	}
+	string id = 1 [(gogoproto.customname) = "ID"]; 
+	Type type = 2;
+	Status status = 3;
+	uint64 tasks_requested = 4;
+	uint64 tasks_completed = 5;
+	uint64 tasks_errored = 6;
+	repeated string errors = 7;
+	uint64 completed_timestamp = 8;
+	uint64 created_timestamp = 9;
+	uint64 modified_timestamp = 10;
+	string requesting_entity = 11;
+}
+
+message BatchJobsRequest {
+	oneof lookup_key {
+		string id = 1 [(gogoproto.customname) = "ID"]; 
+		string requesting_entity = 2; 
+	}
+}
+
+message BatchJobsResponse { 
+	repeated BatchJob batch_jobs = 1;
+}
+
+message BatchPostMessagesRequest {
+	string uuid = 1 [(gogoproto.customname) = "UUID"];
+	string requesting_entity = 2; 
+	repeated PostMessagesRequest post_messages_requests = 3;
+}
+
+message BatchPostMessagesResponse {
+	BatchJob batch_job = 1; 
+}
+
 service Threads {
+	// BatchJobs queries for the status of a list of batch jobs
+	rpc BatchJobs(BatchJobsRequest) returns (BatchJobsResponse);
+	// BatchPostMessages asynchronously posts a bulk set of messages to threads
+    rpc BatchPostMessages(BatchPostMessagesRequest) returns (BatchPostMessagesResponse);
 	// CloneAttachments creates a clone of a list of attachments
 	rpc CloneAttachments(CloneAttachmentsRequest) returns (CloneAttachmentsResponse);
 	// CreateEmptyThread creates a new thread with no messages
