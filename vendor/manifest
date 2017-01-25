@@ -227,7 +227,7 @@
 			"importpath": "github.com/sprucehealth/go-voicebase",
 			"repository": "https://github.com/sprucehealth/go-voicebase",
 			"vcs": "git",
-			"revision": "20cac26fef2749dab467eb3bec39cad0c7c38f3d",
+			"revision": "e1c9a47381a9f59a9b268c270572fae8dec1250c",
 			"branch": "master",
 			"notests": true
 		},
