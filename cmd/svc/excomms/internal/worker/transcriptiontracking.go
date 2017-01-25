@@ -129,7 +129,9 @@ func (w *transcriptionTracker) processTranscription(ctx context.Context, data st
 
 	// if we have waited too long for the transcription to be processed, skip the
 	// transcription all together and publish the voicemail without the transcription.
-	if time.Since(job.Created) > 15*time.Minute {
+	// waiting a maximum of 11 minutes given that the SLA from voicebase is that
+	// 99.9% of all voicemails will be transcribed within 10 minutes.
+	if time.Since(job.Created) > 11*time.Minute {
 		if err := w.publishExternalMessage(&req, ""); err != nil {
 			return errors.Errorf("unable to publish voicemail for media %s: %s", req.MediaID, err)
 		}
