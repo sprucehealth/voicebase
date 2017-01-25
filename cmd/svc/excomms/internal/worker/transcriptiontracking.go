@@ -115,7 +115,7 @@ func (w *transcriptionTracker) processTranscription(ctx context.Context, data st
 
 		return nil
 	}); err != nil {
-		return errors.Wrapf(err, "unable to process transcription for %s : %s", req.MediaID)
+		return errors.Wrapf(err, "unable to process transcription for %s", req.MediaID)
 	}
 
 	// nothing to do if the job has already been completed
