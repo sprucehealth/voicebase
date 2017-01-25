@@ -884,6 +884,7 @@ func (d *dal) LookupTranscriptionJob(ctx context.Context, mediaID string, opts .
 		&job.MediaID,
 		&job.JobID,
 		&job.Created,
+		&job.Completed,
 		&job.AvailableAfter,
 		&job.CompletedTimestamp); err != nil {
 		if err == sql.ErrNoRows {
