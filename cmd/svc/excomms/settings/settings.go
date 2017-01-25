@@ -17,6 +17,7 @@ const (
 	ConfigKeyExposeCaller                  = "expose_caller"
 	ConfigKeyCallScreeningEnabled          = "call_screening_enabled"
 	ConfigKeyDefaultProvisionedPhoneNumber = "default_provisioned_phone_number"
+	ConfigKeyTranscriptionProvider         = "transcription_provider"
 )
 
 //
@@ -188,6 +189,38 @@ var TranscribeVoicemailConfig = &settings.Config{
 		Boolean: &settings.BooleanConfig{
 			Default: &settings.BooleanValue{
 				Value: false,
+			},
+		},
+	},
+}
+
+const (
+	TranscriptionProviderTwilio    = "transcription_provider_twilio"
+	TranscriptionProviderVoicebase = "transcription_provider_voicebase"
+)
+
+var TranscriptionProviderConfig = &settings.Config{
+	Title:          "Transcription provider (twilio or voicebase).",
+	Key:            ConfigKeyTranscriptionProvider,
+	AllowSubkeys:   false,
+	Type:           settings.ConfigType_SINGLE_SELECT,
+	PossibleOwners: []settings.OwnerType{settings.OwnerType_ORGANIZATION},
+	Config: &settings.Config_SingleSelect{
+		SingleSelect: &settings.SingleSelectConfig{
+			Items: []*settings.Item{
+				{
+					ID:    TranscriptionProviderTwilio,
+					Label: "Twilio",
+				},
+				{
+					ID:    TranscriptionProviderVoicebase,
+					Label: "Voicebase",
+				},
+			},
+			Default: &settings.SingleSelectValue{
+				Item: &settings.ItemValue{
+					ID: TranscriptionProviderTwilio,
+				},
 			},
 		},
 	},

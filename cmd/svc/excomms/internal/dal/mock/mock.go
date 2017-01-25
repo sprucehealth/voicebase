@@ -306,3 +306,28 @@ func (m *mockDAL) LookupBlockedNumbers(ctx context.Context, provisionedPhoneNumb
 	}
 	return rets[0].(models.BlockedNumbers), mock.SafeError(rets[1])
 }
+
+func (m *mockDAL) InsertTranscriptionJob(ctx context.Context, job *models.TranscriptionJob) error {
+	rets := m.Record(job)
+	if len(rets) == 0 {
+		return nil
+	}
+	return mock.SafeError(rets[0])
+}
+
+func (m *mockDAL) LookupTranscriptionJob(ctx context.Context, mediaID string, opts ...dal.QueryOption) (*models.TranscriptionJob, error) {
+	rets := m.Record(mediaID)
+	if len(rets) == 0 {
+		return nil, nil
+	}
+	return rets[0].(*models.TranscriptionJob), mock.SafeError(rets[1])
+}
+
+func (m *mockDAL) UpdateTranscriptionJob(ctx context.Context, mediaID string, update *dal.TranscriptionJobUpdate) (int64, error) {
+	rets := m.Record(mediaID, update)
+	if len(rets) == 0 {
+		return 0, nil
+	}
+
+	return rets[0].(int64), mock.SafeError(rets[1])
+}

@@ -638,6 +638,9 @@ func TestAfterHours_Voicemail(t *testing.T) {
 			{
 				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
 			},
+			{
+				Key: excommsSettings.ConfigKeyTranscriptionProvider,
+			},
 		},
 	}).WithReturns(&settings.GetValuesResponse{
 		Values: []*settings.Value{
@@ -646,6 +649,16 @@ func TestAfterHours_Voicemail(t *testing.T) {
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: false,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_SINGLE_SELECT,
+				Value: &settings.Value_SingleSelect{
+					SingleSelect: &settings.SingleSelectValue{
+						Item: &settings.ItemValue{
+							ID: excommsSettings.TranscriptionProviderTwilio,
+						},
 					},
 				},
 			},
@@ -668,7 +681,7 @@ func TestAfterHours_Voicemail(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	expected := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<Response><Say voice="alice">Please leave a message after the tone.</Say><Record action="/twilio/call/afterhours_process_voicemail" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/no_op" playBeep="true"></Record></Response>`)
+<Response><Say voice="alice">Please leave a message after the tone.</Say><Record action="/twilio/call/afterhours_process_voicemail" timeout="60" maxLength="3600" playBeep="true"></Record></Response>`)
 
 	if twiml != expected {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -719,6 +732,9 @@ func TestAfterHours_Voicemail_Transcription(t *testing.T) {
 			{
 				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
 			},
+			{
+				Key: excommsSettings.ConfigKeyTranscriptionProvider,
+			},
 		},
 	}).WithReturns(&settings.GetValuesResponse{
 		Values: []*settings.Value{
@@ -727,6 +743,16 @@ func TestAfterHours_Voicemail_Transcription(t *testing.T) {
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: true,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_SINGLE_SELECT,
+				Value: &settings.Value_SingleSelect{
+					SingleSelect: &settings.SingleSelectValue{
+						Item: &settings.ItemValue{
+							ID: excommsSettings.TranscriptionProviderTwilio,
+						},
 					},
 				},
 			},

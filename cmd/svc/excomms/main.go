@@ -8,46 +8,47 @@ import (
 )
 
 var config struct {
-	excommsServicePort          int
-	excommsAPIURL               string
-	directoryServiceURL         string
-	threadingServiceAddress     string
-	settingsServiceURL          string
-	twilioAuthToken             string
-	twilioAccountSID            string
-	twilioApplicationSID        string
-	twilioSigningKeySID         string
-	twilioSigningKey            string
-	twilioVideoConfigSID        string
-	sendgridAPIKey              string
-	spruceEmailDomain           string
-	transactionalSendgridAPIKey string
-	transactionalEmailDomain    string
-	attachmentBucket            string
-	attachmentPrefix            string
-	externalMessageTopic        string
-	eventTopic                  string
-	incomingRawMessageQueue     string
-	dbHost                      string
-	dbPassword                  string
-	dbName                      string
-	dbUserName                  string
-	dbPort                      int
-	dbCACert                    string
-	dbTLS                       string
-	httpAddr                    string
-	proxyProtocol               bool
-	excommsServiceURL           string
-	incomingRawMessageTopic     string
-	kmsKeyARN                   string
-	resourceCleanerQueueURL     string
-	resourceCleanerTopic        string
-	segmentIOKey                string
-	apiDomain                   string
-	mediaAPIDomain              string
-	sigKeys                     string
-	behindProxy                 bool
-	notificationSQSURL          string
+	excommsServicePort           int
+	excommsAPIURL                string
+	directoryServiceURL          string
+	threadingServiceAddress      string
+	settingsServiceURL           string
+	twilioAuthToken              string
+	twilioAccountSID             string
+	twilioApplicationSID         string
+	twilioSigningKeySID          string
+	twilioSigningKey             string
+	twilioVideoConfigSID         string
+	sendgridAPIKey               string
+	spruceEmailDomain            string
+	transactionalSendgridAPIKey  string
+	transactionalEmailDomain     string
+	attachmentBucket             string
+	attachmentPrefix             string
+	externalMessageTopic         string
+	eventTopic                   string
+	incomingRawMessageQueue      string
+	dbHost                       string
+	dbPassword                   string
+	dbName                       string
+	dbUserName                   string
+	dbPort                       int
+	dbCACert                     string
+	dbTLS                        string
+	httpAddr                     string
+	proxyProtocol                bool
+	excommsServiceURL            string
+	incomingRawMessageTopic      string
+	kmsKeyARN                    string
+	resourceCleanerQueueURL      string
+	resourceCleanerTopic         string
+	segmentIOKey                 string
+	apiDomain                    string
+	mediaAPIDomain               string
+	sigKeys                      string
+	behindProxy                  bool
+	notificationSQSURL           string
+	transcriptionTrackingSQSName string
 }
 
 func init() {
@@ -87,6 +88,7 @@ func init() {
 	flag.StringVar(&config.sigKeys, "signature_keys_csv", "", "csv signature keys")
 	flag.BoolVar(&config.behindProxy, "behind_proxy", false, "Set to true if behind a proxy")
 	flag.StringVar(&config.notificationSQSURL, "notification_sqs_url", "", "URL of the notification SQS queue")
+	flag.StringVar(&config.transcriptionTrackingSQSName, "transcription_tracking_sqs_name", "transcription-tracker", "Name of the SQS queue that tracks transcriptions")
 
 	// Services
 	flag.StringVar(&config.directoryServiceURL, "directory_addr", "_directory._tcp.service", "address to connect with directory service")

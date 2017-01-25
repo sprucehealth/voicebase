@@ -80,6 +80,13 @@ type IncomingCallUpdate struct {
 	LeftVoicemailTime *time.Time
 }
 
+type TranscriptionJobUpdate struct {
+	Completed          *bool
+	CompletedTimestamp *time.Time
+	AvailableAfter     *time.Time
+	TimedOut           *bool
+}
+
 type DAL interface {
 	// Transact encapsulates the provided function in a transaction and handles rollback and commit actions
 	Transact(func(DAL) error) error
@@ -182,6 +189,15 @@ type DAL interface {
 
 	// LookupBlockedNumbers returns the list of blockedNumbers for the specified provisioned number
 	LookupBlockedNumbers(ctx context.Context, provisionedPhoneNumber phone.Number) (models.BlockedNumbers, error)
+
+	// InsertTranscriptionJob inserts a new transcription job
+	InsertTranscriptionJob(ctx context.Context, job *models.TranscriptionJob) error
+
+	// LookupTranscritpionJob looks up an existing transcription job by the media ID
+	LookupTranscriptionJob(ctx context.Context, mediaID string, opts ...QueryOption) (*models.TranscriptionJob, error)
+
+	// UpdateTranscriptionJob updates the mutable fields of a transcription job
+	UpdateTranscriptionJob(ctx context.Context, mediaID string, update *TranscriptionJobUpdate) (int64, error)
 }
 
 type dal struct {
@@ -206,6 +222,7 @@ var (
 	ErrIncomingCallNotFound                = errors.New("incoming_call not found")
 	ErrCallRequestNotFound                 = errors.New("call request not found")
 	ErrIPCallNotFound                      = errors.New("ipcall not found")
+	ErrTranscriptionJobNotFound            = errors.New("transcription_job not found")
 	// ErrExists is returned when trying to insert an object but it already exists (unique constraint)
 	ErrExists = errors.New("object exists")
 )
@@ -845,4 +862,70 @@ func (d *dal) LookupBlockedNumbers(ctx context.Context, provisionedPhoneNumber p
 	}
 
 	return models.BlockedNumbers(phoneNumbers), errors.Trace(rows.Err())
+}
+
+func (d *dal) InsertTranscriptionJob(ctx context.Context, job *models.TranscriptionJob) error {
+	_, err := d.db.Exec(`REPLACE INTO transcription_job (media_id, job_id, available_after) VALUES (?,?,?)`, job.MediaID, job.JobID, job.AvailableAfter)
+	return err
+}
+
+func (d *dal) LookupTranscriptionJob(ctx context.Context, mediaID string, opts ...QueryOption) (*models.TranscriptionJob, error) {
+	forUpdate := ""
+	if queryOptions(opts).Has(ForUpdate) {
+		forUpdate = " FOR UPDATE"
+	}
+
+	var job models.TranscriptionJob
+	if err := d.db.QueryRow(`
+		SELECT media_id, job_id, created, completed, available_after, completed_timestamp
+		FROM transcription_job
+		WHERE media_id = ?
+		`+forUpdate, mediaID).Scan(
+		&job.MediaID,
+		&job.JobID,
+		&job.Created,
+		&job.AvailableAfter,
+		&job.CompletedTimestamp); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Trace(ErrTranscriptionJobNotFound)
+		}
+		return nil, errors.Trace(err)
+	}
+
+	return &job, nil
+}
+
+func (d *dal) UpdateTranscriptionJob(ctx context.Context, mediaID string, update *TranscriptionJobUpdate) (int64, error) {
+	args := dbutil.MySQLVarArgs()
+	if update.Completed != nil {
+		args.Append("completed", *update.Completed)
+	}
+	if update.CompletedTimestamp != nil {
+		args.Append("completed_timestamp", *update.CompletedTimestamp)
+	}
+	if update.AvailableAfter != nil {
+		args.Append("available_after", *update.AvailableAfter)
+	}
+	if update.TimedOut != nil {
+		args.Append("timed_out", *update.TimedOut)
+	}
+
+	if args == nil || args.IsEmpty() {
+		return 0, nil
+	}
+
+	res, err := d.db.Exec(`
+		UPDATE transcription_job
+		SET `+args.ColumnsForUpdate()+`
+		WHERE media_id = ?`, append(args.Values(), mediaID)...)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	rowsUpdated, err := res.RowsAffected()
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	return rowsUpdated, nil
 }

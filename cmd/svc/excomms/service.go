@@ -24,6 +24,7 @@ import (
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/sig"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/libs/transcription"
 	"github.com/sprucehealth/backend/libs/twilio"
 	"github.com/sprucehealth/backend/libs/urlutil"
 	"github.com/sprucehealth/backend/svc/directory"
@@ -95,6 +96,8 @@ func runService(bootSvc *boot.Service) {
 	}
 	notificationClient := notification.NewClient(eSQS, &notification.ClientConfig{SQSNotificationURL: config.notificationSQSURL})
 
+	var transcriptionProvider transcription.Provider
+
 	// register the settings with the service
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	settingsClient := settings.NewSettingsClient(settingsConn)
@@ -112,11 +115,17 @@ func runService(bootSvc *boot.Service) {
 			excommsSettings.ExposeCallerConfig,
 			excommsSettings.CallScreeningConfig,
 			excommsSettings.DefaultProvisionedPhoneNumberConfig,
+			excommsSettings.TranscriptionProviderConfig,
 		})
 	if err != nil {
 		golog.Fatalf("Unable to register configs with the settings service: %s", err.Error())
 	}
 	cancel()
+
+	transcriptionTrackingSQSURL, err := bootSvc.SQSURL(config.transcriptionTrackingSQSName)
+	if err != nil {
+		golog.Fatalf("unable to create sqs url for transcription tracker: %s", err)
+	}
 
 	store := storage.NewS3(awsSession, config.attachmentBucket, config.attachmentPrefix)
 	dl := dal.New(db, clock.New())
@@ -129,12 +138,25 @@ func runService(bootSvc *boot.Service) {
 		store,
 		config.twilioAccountSID,
 		config.twilioAuthToken,
-		config.resourceCleanerTopic)
+		config.resourceCleanerTopic,
+		settingsClient,
+		transcriptionProvider,
+		transcriptionTrackingSQSURL)
 
 	if err != nil {
 		golog.Fatalf("Unable to start worker: %s", err.Error())
 	}
 	w.Start()
+
+	transcriptionTrackingWorker := worker.NewTranscriptionTrackingWorker(
+		transcriptionProvider,
+		eSNS,
+		eSQS,
+		config.externalMessageTopic,
+		config.resourceCleanerTopic,
+		transcriptionTrackingSQSURL,
+		dl)
+	transcriptionTrackingWorker.Start()
 
 	proxyNumberManager := proxynumber.NewManager(dl, clock.New())
 
@@ -192,11 +214,13 @@ func runService(bootSvc *boot.Service) {
 		golog.Fatalf("Unable to build queue url for resource cleaner %s: %s", config.resourceCleanerQueueURL, err.Error())
 	}
 
-	resourceCleaner := cleaner.NewWorker(twilio.NewClient(config.twilioAccountSID, config.twilioAuthToken, nil), dl, eSQS, *res.QueueUrl)
+	resourceCleaner := cleaner.NewWorker(twilio.NewClient(config.twilioAccountSID, config.twilioAuthToken, nil), dl, eSQS, transcriptionProvider, *res.QueueUrl)
 	resourceCleaner.Start()
 	// TODO: Only listen on secure connection.
 	golog.Infof("Starting excomms service on port %d", config.excommsServicePort)
 	if err := excommsServer.Serve(lis); err != nil {
 		golog.Fatalf(err.Error())
 	}
+
+	transcriptionTrackingWorker.Stop(30 * time.Second)
 }

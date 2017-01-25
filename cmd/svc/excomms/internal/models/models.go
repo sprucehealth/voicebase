@@ -156,3 +156,13 @@ func (b BlockedNumbers) ToStringSlice() []string {
 	}
 	return phoneNumbers
 }
+
+type TranscriptionJob struct {
+	MediaID            string
+	JobID              string
+	Created            time.Time
+	Completed          bool
+	Processing         bool
+	AvailableAfter     time.Time
+	CompletedTimestamp *time.Time
+}

@@ -259,6 +259,24 @@ func (svc *Service) AWSSession() (*session.Session, error) {
 	return svc.awsSession, svc.awsSessionErr
 }
 
+func (svc *Service) SQSURL(name string) (string, error) {
+	awsSession, err := svc.AWSSession()
+	if err != nil {
+		return "", err
+	}
+
+	accountID, err := getAWSAccountID(awsSession)
+	if err != nil {
+		return "", err
+	}
+
+	if !strings.HasPrefix(name, environment.GetCurrent()) {
+		name = environment.GetCurrent() + "-" + name
+	}
+
+	return fmt.Sprintf("https://sqs.%s.amazonaws.com/%s/%s", *awsSession.Config.Region, accountID, name), nil
+}
+
 // MemcacheClient lazily creates and returns a memcached client. It returns the same client on every call.
 func (svc *Service) MemcacheClient() (*memcache.Client, error) {
 	if svc.flags.memcachedDiscoveryAddr == "" && svc.flags.memcachedHosts == "" {

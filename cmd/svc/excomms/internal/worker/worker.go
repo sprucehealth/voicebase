@@ -23,6 +23,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/utils"
+	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
 	"github.com/sprucehealth/backend/libs/audioutil"
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/errors"
@@ -31,22 +32,27 @@ import (
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/storage"
+	"github.com/sprucehealth/backend/libs/transcription"
 	"github.com/sprucehealth/backend/libs/twilio"
 	"github.com/sprucehealth/backend/svc/excomms"
+	"github.com/sprucehealth/backend/svc/settings"
 )
 
 type IncomingRawMessageWorker struct {
-	started                  bool
-	sqsAPI                   sqsiface.SQSAPI
-	sqsURL                   string
-	externalMessageTopic     string
-	snsAPI                   snsiface.SNSAPI
-	dal                      dal.DAL
-	store                    storage.Store
-	twilioAccountSID         string
-	twilioAuthToken          string
-	resourceCleanerTopic     string
-	statErrorVoicemailUpload string
+	started                     bool
+	sqsAPI                      sqsiface.SQSAPI
+	sqsURL                      string
+	externalMessageTopic        string
+	snsAPI                      snsiface.SNSAPI
+	dal                         dal.DAL
+	store                       storage.Store
+	twilioAccountSID            string
+	twilioAuthToken             string
+	resourceCleanerTopic        string
+	statErrorVoicemailUpload    string
+	settings                    settings.SettingsClient
+	transcriptionProvider       transcription.Provider
+	transcriptionTrackingSQSURL string
 }
 
 func NewWorker(
@@ -57,7 +63,10 @@ func NewWorker(
 	dal dal.DAL,
 	store storage.Store,
 	twilioAccountSID, twilioAuthToken string,
-	resourceCleanerTopic string) (*IncomingRawMessageWorker, error) {
+	resourceCleanerTopic string,
+	settings settings.SettingsClient,
+	transcriptionProvider transcription.Provider,
+	transcriptionTrackingSQSURL string) (*IncomingRawMessageWorker, error) {
 
 	res, err := sqsAPI.GetQueueUrl(&sqs.GetQueueUrlInput{
 		QueueName: &incomingRawMessageQueueName,
@@ -66,15 +75,18 @@ func NewWorker(
 		return nil, err
 	}
 	return &IncomingRawMessageWorker{
-		sqsAPI:               sqsAPI,
-		sqsURL:               *res.QueueUrl,
-		externalMessageTopic: externalMessageTopic,
-		snsAPI:               snsAPI,
-		dal:                  dal,
-		store:                store,
-		twilioAccountSID:     twilioAccountSID,
-		twilioAuthToken:      twilioAuthToken,
-		resourceCleanerTopic: resourceCleanerTopic,
+		sqsAPI:                      sqsAPI,
+		sqsURL:                      *res.QueueUrl,
+		externalMessageTopic:        externalMessageTopic,
+		snsAPI:                      snsAPI,
+		dal:                         dal,
+		store:                       store,
+		twilioAccountSID:            twilioAccountSID,
+		twilioAuthToken:             twilioAuthToken,
+		resourceCleanerTopic:        resourceCleanerTopic,
+		settings:                    settings,
+		transcriptionProvider:       transcriptionProvider,
+		transcriptionTrackingSQSURL: transcriptionTrackingSQSURL,
 	}, nil
 }
 
@@ -230,14 +242,16 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			})
 		}
 
-		sns.Publish(w.snsAPI, w.externalMessageTopic, &excomms.PublishedExternalMessage{
+		if err := sns.Publish(w.snsAPI, w.externalMessageTopic, &excomms.PublishedExternalMessage{
 			FromChannelID: params.From,
 			ToChannelID:   params.To,
 			Timestamp:     rm.Timestamp,
 			Direction:     excomms.PublishedExternalMessage_INBOUND,
 			Type:          excomms.PublishedExternalMessage_SMS,
 			Item:          smsItem,
-		})
+		}); err != nil {
+			return errors.Trace(err)
+		}
 
 		cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
 			Type:       models.DeleteResourceRequest_TWILIO_SMS,
@@ -278,33 +292,109 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			incomingType = excomms.IncomingCallEventItem_LEFT_URGENT_VOICEMAIL
 		}
 
-		sns.Publish(w.snsAPI, w.externalMessageTopic, &excomms.PublishedExternalMessage{
-			FromChannelID: params.From,
-			ToChannelID:   params.To,
-			Timestamp:     rm.Timestamp,
-			Direction:     excomms.PublishedExternalMessage_INBOUND,
-			Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
-			Item: &excomms.PublishedExternalMessage_Incoming{
-				Incoming: &excomms.IncomingCallEventItem{
-					Type:                incomingType,
-					DurationInSeconds:   params.RecordingDuration,
-					VoicemailMediaID:    media.ID,
-					VoicemailDurationNS: uint64(media.Duration.Nanoseconds()),
-					TranscriptionText:   params.TranscriptionText,
+		var transcribeVoicemail bool
+		transcriptionProvider := excommsSettings.TranscriptionProviderTwilio
+		valueRes, err := w.settings.GetValues(context.Background(), &settings.GetValuesRequest{
+			NodeID: incomingCall.OrganizationID,
+			Keys: []*settings.ConfigKey{
+				{
+					Key: excommsSettings.ConfigKeyTranscribeVoicemail,
+				},
+				{
+					Key: excommsSettings.ConfigKeyTranscriptionProvider,
 				},
 			},
 		})
+		if err != nil {
+			golog.Errorf("unable to get settings value for org %s key %s : %s", incomingCall.OrganizationID, excommsSettings.ConfigKeyTranscribeVoicemail, err)
+		} else if len(valueRes.Values) != 2 {
+			golog.Errorf("expected 2 settings to be returned for org %s but got %d", incomingCall.OrganizationID, len(valueRes.Values))
+		}
 
-		cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
-			Type:       models.DeleteResourceRequest_TWILIO_RECORDING,
-			ResourceID: params.RecordingSID,
-		})
+		transcribeVoicemail = valueRes.Values[0].GetBoolean().Value
+		transcriptionProvider = valueRes.Values[1].GetSingleSelect().Item.ID
 
-		if params.TranscriptionStatus == rawmsg.TwilioParams_TRANSCRIPTION_STATUS_COMPLETED {
+		if transcribeVoicemail && transcriptionProvider == excommsSettings.TranscriptionProviderVoicebase {
+
+			// check if job has already been submitted
+			if job, err := w.dal.LookupTranscriptionJob(context.Background(), media.ID); errors.Trace(err) != dal.ErrTranscriptionJobNotFound && err != nil {
+				return errors.Errorf("unable to query for transcription job for %s : %s", media.ID, err)
+			} else if err == nil && job.Completed {
+				// nothing to do if the job has already been completed
+				return nil
+			}
+
+			expiringURL, err := w.store.ExpiringURL(media.ID, 30*time.Minute)
+			if err != nil {
+				return errors.Errorf("unable to create expiring url for media %s : %s ", media.ID, err)
+			}
+
+			// TODO: Ensure that check for validation errors on the transcription job
+			// like the transcription being too short
+			job, err := w.transcriptionProvider.SubmitTranscriptionJob(expiringURL)
+			if err != nil {
+				return errors.Errorf("unable to submit transcription job for media %s : %s", media.ID, err)
+			}
+
+			req := &trackTranscriptionRequest{
+				JobID:           job.ID,
+				MediaID:         media.ID,
+				RawMessageID:    notif.ID,
+				UrgentVoicemail: incomingType == excomms.IncomingCallEventItem_LEFT_URGENT_VOICEMAIL,
+			}
+
+			jsonData, err := json.Marshal(req)
+			if err != nil {
+				return errors.Errorf("unable to marshal transcription tracking request for %s : %s", req.MediaID, err)
+			}
+
+			if err := w.dal.InsertTranscriptionJob(context.Background(), &models.TranscriptionJob{
+				MediaID:        media.ID,
+				JobID:          job.ID,
+				AvailableAfter: time.Now(),
+			}); err != nil {
+				return errors.Errorf("unable to insert transcription job for media %s : %s", media.ID, err)
+			}
+
+			msg := base64.StdEncoding.EncodeToString(jsonData)
+			if _, err := w.sqsAPI.SendMessage(&sqs.SendMessageInput{
+				QueueUrl:    &w.transcriptionTrackingSQSURL,
+				MessageBody: &msg,
+			}); err != nil {
+				return errors.Errorf("unable to send message on sqs queue %s : %s", w.transcriptionTrackingSQSURL, err)
+			}
+
+		} else {
+			if err := sns.Publish(w.snsAPI, w.externalMessageTopic, &excomms.PublishedExternalMessage{
+				FromChannelID: params.From,
+				ToChannelID:   params.To,
+				Timestamp:     rm.Timestamp,
+				Direction:     excomms.PublishedExternalMessage_INBOUND,
+				Type:          excomms.PublishedExternalMessage_INCOMING_CALL_EVENT,
+				Item: &excomms.PublishedExternalMessage_Incoming{
+					Incoming: &excomms.IncomingCallEventItem{
+						Type:                incomingType,
+						DurationInSeconds:   params.RecordingDuration,
+						VoicemailMediaID:    media.ID,
+						VoicemailDurationNS: uint64(media.Duration.Nanoseconds()),
+						TranscriptionText:   params.TranscriptionText,
+					},
+				},
+			}); err != nil {
+				return errors.Trace(err)
+			}
+
 			cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
-				Type:       models.DeleteResourceRequest_TWILIO_TRANSCRIPTION,
-				ResourceID: params.TranscriptionSID,
+				Type:       models.DeleteResourceRequest_TWILIO_RECORDING,
+				ResourceID: params.RecordingSID,
 			})
+
+			if params.TranscriptionStatus == rawmsg.TwilioParams_TRANSCRIPTION_STATUS_COMPLETED {
+				cleaner.Publish(w.snsAPI, w.resourceCleanerTopic, &models.DeleteResourceRequest{
+					Type:       models.DeleteResourceRequest_TWILIO_TRANSCRIPTION,
+					ResourceID: params.TranscriptionSID,
+				})
+			}
 		}
 
 	case rawmsg.Incoming_SENDGRID_EMAIL:
@@ -371,14 +461,16 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			}
 			emailItem.EmailItem.Attachments = mediaAttachments
 
-			sns.Publish(w.snsAPI, w.externalMessageTopic, &excomms.PublishedExternalMessage{
+			if err := sns.Publish(w.snsAPI, w.externalMessageTopic, &excomms.PublishedExternalMessage{
 				FromChannelID: senderAddress.Address,
 				ToChannelID:   recipientAddress.Address,
 				Timestamp:     rm.Timestamp,
 				Direction:     excomms.PublishedExternalMessage_INBOUND,
 				Type:          excomms.PublishedExternalMessage_EMAIL,
 				Item:          emailItem,
-			})
+			}); err != nil {
+				return errors.Trace(err)
+			}
 		}
 	default:
 		golog.Errorf("Unknown raw message type %s. Dropping...", rm.Type.String())

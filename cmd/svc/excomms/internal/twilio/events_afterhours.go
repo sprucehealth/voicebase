@@ -162,27 +162,40 @@ func afterHoursVoicemailTWIML(ctx context.Context, params *rawmsg.TwilioParams, 
 
 	// check whether or not to transcribe voicemail
 	var transcribeVoicemail bool
-	booleanValue, err := settings.GetBooleanValue(ctx, eh.settings, &settings.GetValuesRequest{
+	transcriptionProvider := excommsSettings.TranscriptionProviderTwilio
+	valueRes, err := eh.settings.GetValues(ctx, &settings.GetValuesRequest{
 		NodeID: entity.ID,
 		Keys: []*settings.ConfigKey{
 			{
 				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
 			},
+			{
+				Key: excommsSettings.ConfigKeyTranscriptionProvider,
+			},
 		},
 	})
 	if err != nil {
-		golog.Errorf("Unable to get transcribe voicemail setting for orgID %s", entity.ID)
+		golog.Errorf("unable to get settings value for orgID %s", entity.ID)
+	} else if len(valueRes.Values) != 2 {
+		golog.Errorf("expected 2 values to be returned when querying for settings for %s but got %d", entity.ID, len(valueRes.Values))
 	}
-	transcribeVoicemail = booleanValue.Value
+
+	transcribeVoicemail = valueRes.Values[0].GetBoolean().Value
+	transcriptionProvider = valueRes.Values[1].GetSingleSelect().Item.ID
 
 	var action, transcribeCallback, transcriptionInfoInVoicemailMessage string
 	if transcribeVoicemail {
-		transcribeCallback = "/twilio/call/afterhours_process_voicemail"
-		action = "/twilio/call/no_op"
+
+		if transcriptionProvider == excommsSettings.TranscriptionProviderTwilio {
+			transcribeCallback = "/twilio/call/afterhours_process_voicemail"
+			action = "/twilio/call/no_op"
+		} else {
+			action = "/twilio/call/afterhours_process_voicemail"
+		}
+
 		transcriptionInfoInVoicemailMessage = " Speak slowly and clearly as your message will be transcribed."
 	} else {
 		action = "/twilio/call/afterhours_process_voicemail"
-		transcribeCallback = "/twilio/call/no_op"
 	}
 
 	tw := &twiml.Response{

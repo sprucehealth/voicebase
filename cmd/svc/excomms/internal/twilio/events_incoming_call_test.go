@@ -705,6 +705,9 @@ func TestIncoming_Organization_MultipleContacts_SendCallsToVoicemail(t *testing.
 			{
 				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
 			},
+			{
+				Key: excommsSettings.ConfigKeyTranscriptionProvider,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -717,6 +720,16 @@ func TestIncoming_Organization_MultipleContacts_SendCallsToVoicemail(t *testing.
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: true,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_SINGLE_SELECT,
+				Value: &settings.Value_SingleSelect{
+					SingleSelect: &settings.SingleSelectValue{
+						Item: &settings.ItemValue{
+							ID: excommsSettings.TranscriptionProviderTwilio,
+						},
 					},
 				},
 			},
@@ -1229,6 +1242,9 @@ func TestVoicemailTwiML(t *testing.T) {
 			{
 				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
 			},
+			{
+				Key: excommsSettings.ConfigKeyTranscriptionProvider,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -1241,6 +1257,16 @@ func TestVoicemailTwiML(t *testing.T) {
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: true,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_SINGLE_SELECT,
+				Value: &settings.Value_SingleSelect{
+					SingleSelect: &settings.SingleSelectValue{
+						Item: &settings.ItemValue{
+							ID: excommsSettings.TranscriptionProviderTwilio,
+						},
 					},
 				},
 			},
@@ -1350,6 +1376,9 @@ func TestVoicemailTwiML_Custom(t *testing.T) {
 			{
 				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
 			},
+			{
+				Key: excommsSettings.ConfigKeyTranscriptionProvider,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -1362,6 +1391,16 @@ func TestVoicemailTwiML_Custom(t *testing.T) {
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: true,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_SINGLE_SELECT,
+				Value: &settings.Value_SingleSelect{
+					SingleSelect: &settings.SingleSelectValue{
+						Item: &settings.ItemValue{
+							ID: excommsSettings.TranscriptionProviderTwilio,
+						},
 					},
 				},
 			},
@@ -1472,6 +1511,9 @@ func TestVoicemailTwiML_NoTranscription(t *testing.T) {
 			{
 				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
 			},
+			{
+				Key: excommsSettings.ConfigKeyTranscriptionProvider,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -1484,6 +1526,16 @@ func TestVoicemailTwiML_NoTranscription(t *testing.T) {
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: false,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_SINGLE_SELECT,
+				Value: &settings.Value_SingleSelect{
+					SingleSelect: &settings.SingleSelectValue{
+						Item: &settings.ItemValue{
+							ID: excommsSettings.TranscriptionProviderTwilio,
+						},
 					},
 				},
 			},
@@ -1508,7 +1560,7 @@ func TestVoicemailTwiML_NoTranscription(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := `<?xml version="1.0" encoding="UTF-8"?>
-<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone.</Say><Record action="/twilio/call/process_voicemail" timeout="60" maxLength="3600" transcribeCallback="/twilio/call/no_op" playBeep="true"></Record></Response>`
+<Response><Say voice="alice">You have reached Dewabi Corp. Please leave a message after the tone.</Say><Record action="/twilio/call/process_voicemail" timeout="60" maxLength="3600" playBeep="true"></Record></Response>`
 
 	if expected != twiml {
 		t.Fatalf("\nExpected: %s\nGot: %s", expected, twiml)
@@ -2154,6 +2206,9 @@ func testDialedCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioParams
 			{
 				Key: excommsSettings.ConfigKeyTranscribeVoicemail,
 			},
+			{
+				Key: excommsSettings.ConfigKeyTranscriptionProvider,
+			},
 		},
 		NodeID: orgID,
 	}).WithReturns(&settings.GetValuesResponse{
@@ -2166,6 +2221,16 @@ func testDialedCallStatus_Other(t *testing.T, incomingStatus rawmsg.TwilioParams
 				Value: &settings.Value_Boolean{
 					Boolean: &settings.BooleanValue{
 						Value: true,
+					},
+				},
+			},
+			{
+				Type: settings.ConfigType_SINGLE_SELECT,
+				Value: &settings.Value_SingleSelect{
+					SingleSelect: &settings.SingleSelectValue{
+						Item: &settings.ItemValue{
+							ID: excommsSettings.TranscriptionProviderTwilio,
+						},
 					},
 				},
 			},
