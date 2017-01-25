@@ -277,6 +277,18 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 		mediaMap[media.ID] = media
 		params.RecordingMediaID = media.ID
 
+		// upload wav format as well (for improved transcription quality and also have to have the uncompressed
+		// file for the voicemail recording)
+		mediaWAV, err := w.uploadTwilioMediaToS3("audio/wav", params.RecordingURL)
+		if err != nil {
+			golog.Errorf("unable to upload twilio media %s in wav format: %s", params.RecordingSID, err)
+			mediaWAV = media
+		} else {
+			mediaWAV.ResourceID = media.ResourceID
+			mediaWAV.Duration = media.Duration
+			mediaMap[mediaWAV.ID] = mediaWAV
+		}
+
 		_, err = utils.PersistRawMessage(w.dal, mediaMap, rm)
 		if err != nil {
 			return errors.Trace(err)
@@ -324,13 +336,11 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 				return nil
 			}
 
-			expiringURL, err := w.store.ExpiringURL(media.ID, 30*time.Minute)
+			expiringURL, err := w.store.ExpiringURL(mediaWAV.ID, 30*time.Minute)
 			if err != nil {
 				return errors.Errorf("unable to create expiring url for media %s : %s ", media.ID, err)
 			}
 
-			// TODO: Ensure that check for validation errors on the transcription job
-			// like the transcription being too short
 			job, err := w.transcriptionProvider.SubmitTranscriptionJob(expiringURL)
 			if err != nil {
 				return errors.Errorf("unable to submit transcription job for media %s : %s", media.ID, err)
