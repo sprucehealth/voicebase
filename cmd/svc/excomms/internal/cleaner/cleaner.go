@@ -13,8 +13,8 @@ import (
 	"github.com/sprucehealth/backend/libs/awsutil"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/transcription"
 	"github.com/sprucehealth/backend/libs/twilio"
+	"github.com/sprucehealth/go-voicebase"
 )
 
 type Worker struct {
@@ -22,8 +22,6 @@ type Worker struct {
 	dal           dal.DAL
 	sqs           sqsiface.SQSAPI
 	cleanupWorker *awsutil.SQSWorker
-	// TODO connect the voicebase client here directly
-	transcriptionProvider transcription.Provider
 }
 
 type snsMessage struct {
@@ -34,13 +32,11 @@ func NewWorker(
 	twilio *twilio.Client,
 	dal dal.DAL,
 	sqs sqsiface.SQSAPI,
-	transcriptionProvider transcription.Provider,
 	cleanupQueueURL string) *Worker {
 	w := &Worker{
 		twilio: twilio,
 		dal:    dal,
 		sqs:    sqs,
-		transcriptionProvider: transcriptionProvider,
 	}
 	w.cleanupWorker = awsutil.NewSQSWorker(sqs, cleanupQueueURL, w.processSNSEvent)
 	return w
@@ -130,8 +126,12 @@ func (w *Worker) processEvent(drr *models.DeleteResourceRequest) error {
 			return errors.Trace(err)
 		}
 	case models.DeleteResourceRequest_VOICEBASE_TRANSCRIPTION:
-		if err := w.transcriptionProvider.DeleteMedia(drr.ResourceID); err != nil {
-			// TODO voicebase specific error handling
+		if err := voicebase.DeleteMedia(drr.ResourceID); err != nil {
+
+			if e, ok := err.(*voicebase.Error); ok && e.Status == http.StatusNotFound {
+				return nil
+			}
+
 			return errors.Trace(err)
 		}
 	}

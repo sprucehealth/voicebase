@@ -224,6 +224,14 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/sprucehealth/go-voicebase",
+			"repository": "https://github.com/sprucehealth/go-voicebase",
+			"vcs": "git",
+			"revision": "20cac26fef2749dab467eb3bec39cad0c7c38f3d",
+			"branch": "master",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/sprucehealth/graphql",
 			"repository": "https://github.com/sprucehealth/graphql",
 			"vcs": "git",
