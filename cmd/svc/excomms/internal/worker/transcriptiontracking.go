@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 
+	"encoding/base64"
 	"encoding/json"
 	"time"
 
@@ -74,8 +75,13 @@ func (w *transcriptionTracker) Stop(wait time.Duration) {
 }
 
 func (w *transcriptionTracker) processTranscription(ctx context.Context, data string) error {
+	decodedData, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
 	var req trackTranscriptionRequest
-	if err := json.Unmarshal([]byte(data), req); err != nil {
+	if err := json.Unmarshal(decodedData, req); err != nil {
 		return errors.Trace(err)
 	}
 
