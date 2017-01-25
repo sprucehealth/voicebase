@@ -1,4 +1,4 @@
-__Note that this API is not complete.__
+__Note that this library is not complete.__
 
 This is a go library to communicate with the Voicebase API.
 
