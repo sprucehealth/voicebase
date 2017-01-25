@@ -317,7 +317,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 		if transcribeVoicemail && transcriptionProvider == excommsSettings.TranscriptionProviderVoicebase {
 
 			// check if job has already been submitted
-			if job, err := w.dal.LookupTranscriptionJob(context.Background(), media.ID); errors.Trace(err) != dal.ErrTranscriptionJobNotFound && err != nil {
+			if job, err := w.dal.LookupTranscriptionJob(context.Background(), media.ID); errors.Cause(err) != dal.ErrTranscriptionJobNotFound && err != nil {
 				return errors.Errorf("unable to query for transcription job for %s : %s", media.ID, err)
 			} else if err == nil && job.Completed {
 				// nothing to do if the job has already been completed
