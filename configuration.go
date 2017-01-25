@@ -40,22 +40,3 @@ type Configuration struct {
 type ConfigurationContainer struct {
 	Configuration *Configuration `json:"configuration"`
 }
-
-// voicemailOptimizedConfiguration defines a configuration
-// as recommended by voicebase optimized for a fast transcription
-// turnaround time.
-var voicemailOptimizedConfiguration = &Configuration{
-	Executor: "v2",
-	Keywords: &KeywordConfiguration{
-		Semantic: false,
-	},
-	Topics: &TopicsConfiguration{
-		Semantic: false,
-	},
-	Ingest: &IngestConfiguration{
-		Priority: PriorityHigh,
-	},
-	Transcript: &TranscriptionConfiguration{
-		FormatNumbers: []string{"digits", "dashed"},
-	},
-}

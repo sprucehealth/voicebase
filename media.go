@@ -7,26 +7,26 @@ import (
 	"strings"
 )
 
-type Word struct {
+type word struct {
 	Position   int     `json:"p"`
 	Confidence float64 `json:"c"`
 	Word       string  `json:"w"`
 }
 
-type Transcript struct {
+type transcript struct {
 	ID    string  `json:"transcriptId"`
-	Words []*Word `json:"words"`
+	Words []*word `json:"words"`
 }
 
 type Media struct {
 	ID          string                 `json:"mediaId"`
 	Status      string                 `json:"status"`
-	Transcripts map[string]*Transcript `json:"transcripts"`
+	transcripts map[string]*transcript `json:"transcripts"`
 }
 
 func (m *Media) TranscriptionText() string {
 
-	latestTranscription := m.Transcripts["latest"]
+	latestTranscription := m.transcripts["latest"]
 	if latestTranscription == nil {
 		return ""
 	}
@@ -43,8 +43,27 @@ func (m *Media) TranscriptionText() string {
 	return strings.Join(words[:len(words)-1], " ") + words[len(words)-1]
 }
 
-type MediaResponse struct {
+type mediaResponse struct {
 	Media *Media `json:"media"`
+}
+
+// voicemailOptimizedConfiguration defines a configuration
+// as recommended by voicebase optimized for a fast transcription
+// turnaround time.
+var voicemailOptimizedConfiguration = &Configuration{
+	Executor: "v2",
+	Keywords: &KeywordConfiguration{
+		Semantic: false,
+	},
+	Topics: &TopicsConfiguration{
+		Semantic: false,
+	},
+	Ingest: &IngestConfiguration{
+		Priority: PriorityHigh,
+	},
+	Transcript: &TranscriptionConfiguration{
+		FormatNumbers: []string{"digits", "dashed"},
+	},
 }
 
 type MediaClient interface {
@@ -70,7 +89,7 @@ func (m mediaClient) Upload(url string) (string, error) {
 	writer.WriteField("media", url)
 
 	configurationData, err := json.Marshal(&ConfigurationContainer{
-		Configuration: defaultConfiguration,
+		Configuration: voicemailOptimizedConfiguration,
 	})
 	if err != nil {
 		return "", err
@@ -91,7 +110,7 @@ func (m mediaClient) Upload(url string) (string, error) {
 }
 
 func (m mediaClient) Get(id string) (*Media, error) {
-	var mediaResponse MediaResponse
+	var mediaResponse mediaResponse
 	if err := m.b.Call("GET", "media/"+id, BearerToken, &mediaResponse); err != nil {
 		return nil, err
 	}
