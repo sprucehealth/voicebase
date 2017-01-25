@@ -77,7 +77,7 @@ func ErrRetryAfter(duration time.Duration) error {
 // received from the SQS queue.
 func VisibilityTimeoutInSeconds(timeoutSeconds int64) func(*SQSWorker) {
 	return func(s *SQSWorker) {
-		s.waitTimeSeconds = timeoutSeconds
+		s.visibilityTimeoutSeconds = timeoutSeconds
 	}
 }
 
