@@ -81,7 +81,7 @@ func (w *transcriptionTracker) processTranscription(ctx context.Context, data st
 	}
 
 	var req trackTranscriptionRequest
-	if err := json.Unmarshal(decodedData, req); err != nil {
+	if err := json.Unmarshal(decodedData, &req); err != nil {
 		return errors.Trace(err)
 	}
 
