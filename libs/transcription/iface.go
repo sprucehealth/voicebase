@@ -3,8 +3,10 @@ package transcription
 type JobStatus string
 
 const (
-	JobStatusSubmitted JobStatus = "JOB_SUBMITTED"
-	JobStatusCompleted JobStatus = "JOB_COMPLETED"
+	JobStatusSubmitted  JobStatus = "SUBMITTED"
+	JobStatusProcessing JobStatus = "PROCESSING"
+	JobStatusCompleted  JobStatus = "COMPLETED"
+	JobStatusUnknown    JobStatus = "UNKNOWN"
 )
 
 type Job struct {
@@ -16,5 +18,4 @@ type Job struct {
 type Provider interface {
 	SubmitTranscriptionJob(url string) (*Job, error)
 	LookupTranscriptionJob(id string) (*Job, error)
-	DeleteMedia(mediaID string) error
 }

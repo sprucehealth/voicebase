@@ -96,7 +96,7 @@ func runService(bootSvc *boot.Service) {
 	}
 	notificationClient := notification.NewClient(eSQS, &notification.ClientConfig{SQSNotificationURL: config.notificationSQSURL})
 
-	var transcriptionProvider transcription.Provider
+	transcriptionProvider := transcription.NewVoicebaseProvider(config.voicebaseBearerToken)
 
 	// register the settings with the service
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -214,7 +214,7 @@ func runService(bootSvc *boot.Service) {
 		golog.Fatalf("Unable to build queue url for resource cleaner %s: %s", config.resourceCleanerQueueURL, err.Error())
 	}
 
-	resourceCleaner := cleaner.NewWorker(twilio.NewClient(config.twilioAccountSID, config.twilioAuthToken, nil), dl, eSQS, transcriptionProvider, *res.QueueUrl)
+	resourceCleaner := cleaner.NewWorker(twilio.NewClient(config.twilioAccountSID, config.twilioAuthToken, nil), dl, eSQS, *res.QueueUrl)
 	resourceCleaner.Start()
 	// TODO: Only listen on secure connection.
 	golog.Infof("Starting excomms service on port %d", config.excommsServicePort)

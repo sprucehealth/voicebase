@@ -49,6 +49,7 @@ var config struct {
 	behindProxy                  bool
 	notificationSQSURL           string
 	transcriptionTrackingSQSName string
+	voicebaseBearerToken         string
 }
 
 func init() {
@@ -89,6 +90,7 @@ func init() {
 	flag.BoolVar(&config.behindProxy, "behind_proxy", false, "Set to true if behind a proxy")
 	flag.StringVar(&config.notificationSQSURL, "notification_sqs_url", "", "URL of the notification SQS queue")
 	flag.StringVar(&config.transcriptionTrackingSQSName, "transcription_tracking_sqs_name", "transcription-tracker", "Name of the SQS queue that tracks transcriptions")
+	flag.StringVar(&config.voicebaseBearerToken, "voicebase_bearer_token", "", "bearer token for voicebase api")
 
 	// Services
 	flag.StringVar(&config.directoryServiceURL, "directory_addr", "_directory._tcp.service", "address to connect with directory service")
