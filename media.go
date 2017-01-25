@@ -21,12 +21,12 @@ type transcript struct {
 type Media struct {
 	ID          string                 `json:"mediaId"`
 	Status      string                 `json:"status"`
-	transcripts map[string]*transcript `json:"transcripts"`
+	Transcripts map[string]*transcript `json:"transcripts"`
 }
 
 func (m *Media) TranscriptionText() string {
 
-	latestTranscription := m.transcripts["latest"]
+	latestTranscription := m.Transcripts["latest"]
 	if latestTranscription == nil {
 		return ""
 	}
