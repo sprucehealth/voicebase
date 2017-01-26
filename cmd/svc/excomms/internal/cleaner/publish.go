@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
+	"github.com/sprucehealth/backend/environment"
 	"github.com/sprucehealth/backend/libs/conc"
 	"github.com/sprucehealth/backend/libs/golog"
 	"github.com/sprucehealth/backend/libs/ptr"
@@ -13,6 +14,10 @@ import (
 
 // Publish posts an event to an SNS topic
 func Publish(sn snsiface.SNSAPI, topicARN string, req *models.DeleteResourceRequest) {
+
+	if environment.IsTest() {
+		return
+	}
 
 	data, err := req.Marshal()
 	if err != nil {

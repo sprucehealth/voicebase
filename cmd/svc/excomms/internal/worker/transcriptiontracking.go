@@ -14,6 +14,7 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
 	"github.com/sprucehealth/backend/libs/awsutil"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/transcription"
@@ -41,6 +42,7 @@ type transcriptionTracker struct {
 	resourceCleanerTopic  string
 	dal                   dal.DAL
 	worker                worker.Worker
+	clk                   clock.Clock
 }
 
 type TranscriptionTrackingWorker interface {
@@ -60,6 +62,7 @@ func NewTranscriptionTrackingWorker(
 		externalMessageTopic:  externalMessageTopic,
 		resourceCleanerTopic:  resourceCleanerTopic,
 		dal:                   dal,
+		clk:                   clock.New(),
 	}
 
 	w.worker = awsutil.NewSQSWorker(sqsAPI, transcriptionTrackingSQSURL, w.processTranscription, awsutil.VisibilityTimeoutInSeconds(60))
@@ -99,14 +102,14 @@ func (w *transcriptionTracker) processTranscription(ctx context.Context, data st
 			return nil
 		}
 
-		if time.Now().Before(job.AvailableAfter) {
+		if w.clk.Now().Before(job.AvailableAfter) {
 			skip = true
 			// job is currently in flight, cannot work on it yet
 			return nil
 		}
 
 		if rowsUpdated, err := dl.UpdateTranscriptionJob(ctx, req.MediaID, &dal.TranscriptionJobUpdate{
-			AvailableAfter: ptr.Time(time.Now().Add(1 * time.Minute)),
+			AvailableAfter: ptr.Time(w.clk.Now().Add(1 * time.Minute)),
 		}); err != nil {
 			return errors.Wrapf(err, "unable to update transcription job for media %s", req.MediaID)
 		} else if rowsUpdated > 1 {
@@ -138,7 +141,7 @@ func (w *transcriptionTracker) processTranscription(ctx context.Context, data st
 
 		return w.jobCompleted(ctx, &req, &dal.TranscriptionJobUpdate{
 			Completed:          ptr.Bool(true),
-			CompletedTimestamp: ptr.Time(time.Now()),
+			CompletedTimestamp: ptr.Time(w.clk.Now()),
 			TimedOut:           ptr.Bool(true),
 		})
 	}
@@ -160,7 +163,7 @@ func (w *transcriptionTracker) processTranscription(ctx context.Context, data st
 
 	return w.jobCompleted(ctx, &req, &dal.TranscriptionJobUpdate{
 		Completed:          ptr.Bool(true),
-		CompletedTimestamp: ptr.Time(time.Now()),
+		CompletedTimestamp: ptr.Time(w.clk.Now()),
 	})
 }
 
