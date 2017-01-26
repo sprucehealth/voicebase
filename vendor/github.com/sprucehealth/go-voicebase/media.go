@@ -73,12 +73,14 @@ type MediaClient interface {
 }
 
 type mediaClient struct {
-	b Backend
+	b           Backend
+	bearerToken string
 }
 
-func NewMediaClient(backend Backend) MediaClient {
+func NewMediaClient(backend Backend, bearerToken string) MediaClient {
 	return &mediaClient{
-		b: backend,
+		b:           backend,
+		bearerToken: bearerToken,
 	}
 }
 
@@ -102,7 +104,7 @@ func (m mediaClient) Upload(url string) (string, error) {
 	}
 
 	var media Media
-	if err := m.b.CallMultipart("POST", "media", BearerToken, writer.Boundary(), body, &media); err != nil {
+	if err := m.b.CallMultipart("POST", "media", m.bearerToken, writer.Boundary(), body, &media); err != nil {
 		return "", err
 	}
 
@@ -111,7 +113,7 @@ func (m mediaClient) Upload(url string) (string, error) {
 
 func (m mediaClient) Get(id string) (*Media, error) {
 	var mediaResponse mediaResponse
-	if err := m.b.Call("GET", "media/"+id, BearerToken, &mediaResponse); err != nil {
+	if err := m.b.Call("GET", "media/"+id, m.bearerToken, &mediaResponse); err != nil {
 		return nil, err
 	}
 
@@ -119,5 +121,5 @@ func (m mediaClient) Get(id string) (*Media, error) {
 }
 
 func (m mediaClient) Delete(id string) error {
-	return m.b.Call("DELETE", "media/"+id, BearerToken, nil)
+	return m.b.Call("DELETE", "media/"+id, m.bearerToken, nil)
 }

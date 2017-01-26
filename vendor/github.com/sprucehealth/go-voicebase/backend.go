@@ -32,9 +32,6 @@ func GetBackend() Backend {
 	}
 }
 
-//BearerToken is the Voicebase authorization key used globally in the binding.
-var BearerToken string
-
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
 // SetHTTPClient overrides the default HTTP client.

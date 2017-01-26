@@ -8,7 +8,7 @@ import (
 type voicebaseTranscriptionProvider struct{}
 
 func NewVoicebaseProvider(bearerToken string) Provider {
-	voicebase.BearerToken = bearerToken
+	voicebase.DefaultClient.Init(bearerToken)
 	return &voicebaseTranscriptionProvider{}
 }
 
