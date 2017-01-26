@@ -1,13 +1,10 @@
 package worker
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"net/mail"
 	"strconv"
 	"strings"
@@ -24,11 +21,10 @@ import (
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/sns"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/utils"
 	excommsSettings "github.com/sprucehealth/backend/cmd/svc/excomms/settings"
-	"github.com/sprucehealth/backend/libs/audioutil"
 	"github.com/sprucehealth/backend/libs/awsutil"
+	"github.com/sprucehealth/backend/libs/clock"
 	"github.com/sprucehealth/backend/libs/errors"
 	"github.com/sprucehealth/backend/libs/golog"
-	"github.com/sprucehealth/backend/libs/media"
 	"github.com/sprucehealth/backend/libs/phone"
 	"github.com/sprucehealth/backend/libs/ptr"
 	"github.com/sprucehealth/backend/libs/storage"
@@ -46,13 +42,13 @@ type IncomingRawMessageWorker struct {
 	snsAPI                      snsiface.SNSAPI
 	dal                         dal.DAL
 	store                       storage.Store
-	twilioAccountSID            string
-	twilioAuthToken             string
 	resourceCleanerTopic        string
 	statErrorVoicemailUpload    string
 	settings                    settings.SettingsClient
 	transcriptionProvider       transcription.Provider
 	transcriptionTrackingSQSURL string
+	uploader                    Uploader
+	clk                         clock.Clock
 }
 
 func NewWorker(
@@ -80,13 +76,12 @@ func NewWorker(
 		externalMessageTopic:        externalMessageTopic,
 		snsAPI:                      snsAPI,
 		dal:                         dal,
-		store:                       store,
-		twilioAccountSID:            twilioAccountSID,
-		twilioAuthToken:             twilioAuthToken,
 		resourceCleanerTopic:        resourceCleanerTopic,
 		settings:                    settings,
 		transcriptionProvider:       transcriptionProvider,
 		transcriptionTrackingSQSURL: transcriptionTrackingSQSURL,
+		uploader:                    newTwilioToS3Uploader(store, twilioAccountSID, twilioAuthToken),
+		clk:                         clock.New(),
 	}, nil
 }
 
@@ -209,7 +204,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 		mediaMap := make(map[string]*models.Media)
 		for i, m := range params.MediaItems {
 
-			media, err := w.uploadTwilioMediaToS3(m.ContentType, m.MediaURL)
+			media, err := w.uploader.Upload(m.ContentType, m.MediaURL)
 			if err != nil {
 				return errors.Trace(err)
 			}
@@ -263,7 +258,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 
 		mediaMap := make(map[string]*models.Media, 1)
 
-		media, err := w.uploadTwilioMediaToS3("audio/mpeg", params.RecordingURL+".mp3")
+		media, err := w.uploader.Upload("audio/mpeg", params.RecordingURL+".mp3")
 		if e, ok := errors.Cause(err).(errMediaNotFound); ok {
 			golog.Warningf("unable to upload twilio media: %s", e)
 			return awsutil.ErrMsgNotProcessedYet
@@ -279,7 +274,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 
 		// upload wav format as well (for improved transcription quality and also have to have the uncompressed
 		// file for the voicemail recording)
-		mediaWAV, err := w.uploadTwilioMediaToS3("audio/wav", params.RecordingURL)
+		mediaWAV, err := w.uploader.Upload("audio/wav", params.RecordingURL)
 		if err != nil {
 			golog.Errorf("unable to upload twilio media %s in wav format: %s", params.RecordingSID, err)
 			mediaWAV = media
@@ -361,7 +356,7 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 			if err := w.dal.InsertTranscriptionJob(context.Background(), &models.TranscriptionJob{
 				MediaID:        media.ID,
 				JobID:          job.ID,
-				AvailableAfter: time.Now(),
+				AvailableAfter: w.clk.Now(),
 			}); err != nil {
 				return errors.Errorf("unable to insert transcription job for media %s : %s", media.ID, err)
 			}
@@ -487,75 +482,6 @@ func (w *IncomingRawMessageWorker) process(notif *sns.IncomingRawMessageNotifica
 	}
 
 	return nil
-}
-
-type errMediaNotFound string
-
-func (e errMediaNotFound) Error() string {
-	return string(e)
-}
-
-func (w *IncomingRawMessageWorker) uploadTwilioMediaToS3(contentType, url string) (*models.Media, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create GET request for url %q", url)
-	}
-	req.SetBasicAuth(w.twilioAccountSID, w.twilioAuthToken)
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, errors.Wrapf(err, "GET failed on url %q", url)
-	}
-	defer res.Body.Close()
-
-	// Note: have to read all the data into memory here because
-	// there is no way to know the size of the data when working with a reader
-	// via the response body
-	data, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-
-		if res.StatusCode == 404 {
-			return nil, errors.Trace(errMediaNotFound(fmt.Sprintf("twilio media %s not found", url)))
-		}
-
-		// Avoid flooding the log
-		if len(data) > 1000 {
-			data = data[:1000]
-		}
-		dataStr := string(data)
-		if !strings.HasPrefix(res.Header.Get("Content-Type"), "text/") {
-			// Avoid non-valid characters from breaking anything in case we get back binary
-			dataStr = strconv.Quote(string(data))
-		}
-		return nil, errors.Trace(fmt.Errorf("Expected status code 2xx when pulling media, got %d: %s", res.StatusCode, dataStr))
-	}
-
-	duration, err := audioutil.Duration(bytes.NewReader(data), contentType)
-	if err != nil {
-		golog.Errorf("Failed to calculate duration of audio: %s", err)
-	}
-
-	id, err := media.NewID()
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	_, err = w.store.Put(id, data, contentType, map[string]string{
-		"x-amz-meta-duration-ns": strconv.FormatInt(duration.Nanoseconds(), 10),
-	})
-	if err != nil {
-		return nil, errors.Trace(err)
-	}
-
-	return &models.Media{
-		ID:       id,
-		Type:     contentType,
-		Duration: duration,
-	}, nil
 }
 
 func parseAddress(addr string) (*mail.Address, error) {

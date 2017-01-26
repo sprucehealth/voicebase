@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql/driver"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/sprucehealth/backend/libs/phone"
@@ -136,6 +137,14 @@ type Media struct {
 	Type       string
 	Name       *string
 	Duration   time.Duration
+}
+
+type ByMediaID []*Media
+
+func (a ByMediaID) Len() int      { return len(a) }
+func (a ByMediaID) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByMediaID) Less(i, j int) bool {
+	return strings.Compare(a[i].ID, a[j].ID) == -1
 }
 
 type BlockedNumbers []phone.Number

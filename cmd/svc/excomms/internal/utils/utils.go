@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"sort"
+
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/dal"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/models"
 	"github.com/sprucehealth/backend/cmd/svc/excomms/internal/rawmsg"
@@ -14,6 +16,8 @@ func PersistRawMessage(dl dal.DAL, media map[string]*models.Media, msg *rawmsg.I
 		for _, m := range media {
 			mediaItems = append(mediaItems, m)
 		}
+
+		sort.Sort(models.ByMediaID(mediaItems))
 
 		if err := d.StoreMedia(mediaItems); err != nil {
 			return err
