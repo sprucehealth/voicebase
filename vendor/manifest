@@ -224,18 +224,18 @@
 			"notests": true
 		},
 		{
-			"importpath": "github.com/sprucehealth/go-voicebase",
-			"repository": "https://github.com/sprucehealth/go-voicebase",
-			"vcs": "git",
-			"revision": "97101471e77836337714811a685f6697462e040c",
-			"branch": "master",
-			"notests": true
-		},
-		{
 			"importpath": "github.com/sprucehealth/graphql",
 			"repository": "https://github.com/sprucehealth/graphql",
 			"vcs": "git",
 			"revision": "0e57c906155ffe993c02db7cab84729b8947bfa5",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/sprucehealth/voicebase",
+			"repository": "https://github.com/sprucehealth/voicebase",
+			"vcs": "git",
+			"revision": "97101471e77836337714811a685f6697462e040c",
 			"branch": "master",
 			"notests": true
 		},
