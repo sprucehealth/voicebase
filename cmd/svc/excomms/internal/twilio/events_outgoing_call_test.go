@@ -266,12 +266,12 @@ func TestOutgoingCallStatus(t *testing.T) {
 		t.Fatalf("Expected %s got %s", "", twiml)
 	}
 
-	if len(ms.published) != 3 {
-		t.Fatalf("Expected 3 but got %d", len(ms.published))
+	if len(ms.published) != 1 {
+		t.Fatalf("Expected 1 but got %d", len(ms.published))
 	}
 
 	// Note that the first two items in the sqs queue should be delete resource requests
-	pem, err := parsePublishedExternalMessage(*ms.published[2].Message)
+	pem, err := parsePublishedExternalMessage(*ms.published[0].Message)
 	if err != nil {
 		t.Fatal(err)
 	} else if pem.FromChannelID != md.cr.Source.String() {
