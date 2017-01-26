@@ -1,0 +1,1 @@
+ALTER TABLE transcription_job ADD COLUMN errored TINYINT(1) NOT NULL DEFAULT 0;
