@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"mime/multipart"
-	"strings"
 )
 
 type word struct {
 	Position   int     `json:"p"`
 	Confidence float64 `json:"c"`
 	Word       string  `json:"w"`
+	M          string  `json:"m"`
 }
 
 type transcript struct {
@@ -35,12 +35,17 @@ func (m *Media) TranscriptionText() string {
 		return ""
 	}
 
-	words := make([]string, len(latestTranscription.Words))
-	for i, w := range latestTranscription.Words {
-		words[i] = w.Word
+	var transcriptionText string
+	for _, w := range latestTranscription.Words {
+		if w.M == "punc" {
+			transcriptionText += w.Word
+		} else {
+			transcriptionText += " " + w.Word
+		}
+
 	}
 
-	return strings.Join(words[:len(words)-1], " ") + words[len(words)-1]
+	return transcriptionText[1:]
 }
 
 type mediaResponse struct {
