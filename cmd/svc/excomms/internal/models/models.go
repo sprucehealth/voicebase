@@ -162,6 +162,7 @@ type TranscriptionJob struct {
 	JobID              string
 	Created            time.Time
 	Completed          bool
+	Errored            bool
 	Processing         bool
 	AvailableAfter     time.Time
 	CompletedTimestamp *time.Time

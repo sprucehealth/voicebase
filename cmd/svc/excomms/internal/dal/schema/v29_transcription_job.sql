@@ -4,6 +4,7 @@ CREATE TABLE transcription_job (
 	created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	completed TINYINT(1) NOT NULL DEFAULT 0, 
 	timed_out TINYINT(1) NOT NULL DEFAULT 0,
+	errored TINYINT(1) NOT NULL DEFAULT 0,
 	available_after TIMESTAMP NOT NULL,
 	completed_timestamp TIMESTAMP,
 	PRIMARY KEY (media_id)

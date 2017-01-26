@@ -39,6 +39,8 @@ func (v voicebaseTranscriptionProvider) LookupTranscriptionJob(id string) (*Job,
 		status = JobStatusProcessing
 	case "accepted":
 		status = JobStatusSubmitted
+	case "failed":
+		status = JobStatusFailed
 	}
 
 	return &Job{

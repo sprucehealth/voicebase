@@ -6,6 +6,7 @@ const (
 	JobStatusSubmitted  JobStatus = "SUBMITTED"
 	JobStatusProcessing JobStatus = "PROCESSING"
 	JobStatusCompleted  JobStatus = "COMPLETED"
+	JobStatusFailed     JobStatus = "FAILED"
 	JobStatusUnknown    JobStatus = "UNKNOWN"
 )
 

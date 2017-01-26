@@ -153,7 +153,20 @@ func (w *transcriptionTracker) processTranscription(ctx context.Context, data st
 	jobStatus, err := w.transcriptionProvider.LookupTranscriptionJob(req.JobID)
 	if err != nil {
 		return errors.Errorf("unable to lookup status of transcription job for media %s : %s", req.MediaID, err)
-	} else if jobStatus.Status != transcription.JobStatusCompleted {
+	}
+
+	if jobStatus.Status == transcription.JobStatusFailed {
+		if err := w.publishExternalMessage(&req, ""); err != nil {
+			return errors.Trace(err)
+		}
+
+		return w.jobCompleted(ctx, &req, &dal.TranscriptionJobUpdate{
+			Errored:            ptr.Bool(true),
+			CompletedTimestamp: ptr.Time(w.clk.Now()),
+		})
+	}
+
+	if jobStatus.Status != transcription.JobStatusCompleted {
 		return awsutil.ErrMsgNotProcessedYet
 	}
 

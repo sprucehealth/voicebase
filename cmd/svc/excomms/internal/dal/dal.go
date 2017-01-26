@@ -82,6 +82,7 @@ type IncomingCallUpdate struct {
 
 type TranscriptionJobUpdate struct {
 	Completed          *bool
+	Errored            *bool
 	CompletedTimestamp *time.Time
 	AvailableAfter     *time.Time
 	TimedOut           *bool
@@ -877,7 +878,7 @@ func (d *dal) LookupTranscriptionJob(ctx context.Context, mediaID string, opts .
 
 	var job models.TranscriptionJob
 	if err := d.db.QueryRow(`
-		SELECT media_id, job_id, created, completed, available_after, completed_timestamp
+		SELECT media_id, job_id, created, completed, errored, available_after, completed_timestamp
 		FROM transcription_job
 		WHERE media_id = ?
 		`+forUpdate, mediaID).Scan(
@@ -885,6 +886,7 @@ func (d *dal) LookupTranscriptionJob(ctx context.Context, mediaID string, opts .
 		&job.JobID,
 		&job.Created,
 		&job.Completed,
+		&job.Errored,
 		&job.AvailableAfter,
 		&job.CompletedTimestamp); err != nil {
 		if err == sql.ErrNoRows {
@@ -909,6 +911,9 @@ func (d *dal) UpdateTranscriptionJob(ctx context.Context, mediaID string, update
 	}
 	if update.TimedOut != nil {
 		args.Append("timed_out", *update.TimedOut)
+	}
+	if update.Errored != nil {
+		args.Append("errored", *update.Errored)
 	}
 
 	if args == nil || args.IsEmpty() {
