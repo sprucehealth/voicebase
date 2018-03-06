@@ -47,11 +47,7 @@ func (s BackendConfiguration) CallMultipart(method, path, key, boundary string, 
 		return err
 	}
 
-	if err := s.Do(req, v); err != nil {
-		return err
-	}
-
-	return nil
+	return s.Do(req, v)
 }
 
 func (s BackendConfiguration) Call(method, path, key string, v interface{}) error {
@@ -60,11 +56,7 @@ func (s BackendConfiguration) Call(method, path, key string, v interface{}) erro
 		return err
 	}
 
-	if err := s.Do(req, v); err != nil {
-		return err
-	}
-
-	return nil
+	return s.Do(req, v)
 }
 
 // NewRequest is used by Call to generate an http.Request.
@@ -106,16 +98,14 @@ func (s BackendConfiguration) Do(req *http.Request, v interface{}) error {
 	if res.StatusCode >= 400 {
 		var vErr Error
 		if err := json.Unmarshal(resBody, &vErr); err != nil {
-			return err
+			vErr.Status = res.StatusCode
+			vErr.Errors.Error = string(resBody)
 		}
 		return &vErr
 	}
 
 	if v != nil {
-		if err := json.Unmarshal(resBody, v); err != nil {
-			return err
-		}
-		return nil
+		return json.Unmarshal(resBody, v)
 	}
 
 	return nil

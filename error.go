@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 )
 
-type errorItem struct {
+type ErrorItem struct {
 	Error string `json:"error"`
 }
 
 // Error is a structured response indicating a non-2xx HTTP response.
 type Error struct {
-	Errors    errorItem `json:"errors"`
+	Errors    ErrorItem `json:"errors"`
 	Reference string    `json:"reference"`
 	Status    int       `json:"status"`
 }

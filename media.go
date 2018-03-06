@@ -25,7 +25,6 @@ type Media struct {
 }
 
 func (m *Media) TranscriptionText() string {
-
 	latestTranscription := m.Transcripts["latest"]
 	if latestTranscription == nil {
 		return ""
