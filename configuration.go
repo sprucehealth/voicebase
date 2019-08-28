@@ -1,13 +1,5 @@
 package voicebase
 
-type KeywordConfiguration struct {
-	Semantic bool `json:"semantic"`
-}
-
-type TopicsConfiguration struct {
-	Semantic bool `json:"semantic"`
-}
-
 type Priority string
 
 const (
@@ -19,24 +11,26 @@ const (
 	PriorityNormal Priority = "normal"
 )
 
-type IngestConfiguration struct {
-	Priority Priority `json:"priority"`
+type TranscriptFormattingConfiguration struct {
+	EnableNumberFormatting bool `json:"enableNumberFormatting"`
+}
+type TranscriptConfiguration struct {
+	Formatting *TranscriptFormattingConfiguration `json:"formatting"`
 }
 
-type TranscriptionConfiguration struct {
-	FormatNumbers []string `json:"formatNumbers"`
+type KnowledgeConfiguration struct {
+	EnableDiscovery bool `json:"enableDiscovery"`
+}
+
+type SpeechModelConfiguration struct {
+	Extensions []string `json:"extensions"`
 }
 
 // Configuration provides a way to configure how to transcribe a media object at
 // the time of upload.
 type Configuration struct {
-	Executor   string                      `json:"executor"`
-	Keywords   *KeywordConfiguration       `json:"keywords,omitempty"`
-	Topics     *TopicsConfiguration        `json:"topics,omitempty"`
-	Ingest     *IngestConfiguration        `json:"ingest"`
-	Transcript *TranscriptionConfiguration `json:"transcripts"`
-}
-
-type ConfigurationContainer struct {
-	Configuration *Configuration `json:"configuration"`
+	Priority   Priority                  `json:"priority"`
+	Transcript *TranscriptConfiguration  `json:"transcript"`
+	Knowledge  *KnowledgeConfiguration   `json:"knowledge"`
+	SpeecModel *SpeechModelConfiguration `json:"speechModel"`
 }
