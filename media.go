@@ -22,12 +22,16 @@ type Media struct {
 	ID          string                 `json:"mediaId"`
 	Status      string                 `json:"status"`
 	Transcripts map[string]*transcript `json:"transcripts"`
+	Transcript  *transcript            `json:"transcript"`
 }
 
 func (m *Media) TranscriptionText() string {
 	latestTranscription := m.Transcripts["latest"]
 	if latestTranscription == nil {
-		return ""
+		if m.Transcript == nil {
+			return ""
+		}
+		latestTranscription = m.Transcript
 	}
 
 	if len(latestTranscription.Words) == 0 {
@@ -47,26 +51,22 @@ func (m *Media) TranscriptionText() string {
 	return transcriptionText[1:]
 }
 
-type mediaResponse struct {
-	Media *Media `json:"media"`
-}
-
 // voicemailOptimizedConfiguration defines a configuration
 // as recommended by voicebase optimized for a fast transcription
 // turnaround time.
+// See: https://voicebase.readthedocs.io/en/v3/how-to-guides/voicemail.html
 var voicemailOptimizedConfiguration = &Configuration{
-	Executor: "v2",
-	Keywords: &KeywordConfiguration{
-		Semantic: false,
+	Priority: PriorityHigh,
+	Transcript: &TranscriptConfiguration{
+		Formatting: &TranscriptFormattingConfiguration{
+			EnableNumberFormatting: true,
+		},
 	},
-	Topics: &TopicsConfiguration{
-		Semantic: false,
+	Knowledge: &KnowledgeConfiguration{
+		EnableDiscovery: false,
 	},
-	Ingest: &IngestConfiguration{
-		Priority: PriorityHigh,
-	},
-	Transcript: &TranscriptionConfiguration{
-		FormatNumbers: []string{"digits", "dashed"},
+	SpeecModel: &SpeechModelConfiguration{
+		Extensions: []string{"voicemail"},
 	},
 }
 
@@ -92,11 +92,9 @@ func (m mediaClient) Upload(url string) (string, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	writer.WriteField("media", url)
+	writer.WriteField("mediaUrl", url)
 
-	configurationData, err := json.Marshal(&ConfigurationContainer{
-		Configuration: voicemailOptimizedConfiguration,
-	})
+	configurationData, err := json.Marshal(voicemailOptimizedConfiguration)
 	if err != nil {
 		return "", err
 	}
@@ -116,12 +114,12 @@ func (m mediaClient) Upload(url string) (string, error) {
 }
 
 func (m mediaClient) Get(id string) (*Media, error) {
-	var mediaResponse mediaResponse
-	if err := m.b.Call("GET", "media/"+id, m.bearerToken, &mediaResponse); err != nil {
+	var media Media
+	if err := m.b.Call("GET", "media/"+id, m.bearerToken, &media); err != nil {
 		return nil, err
 	}
 
-	return mediaResponse.Media, nil
+	return &media, nil
 }
 
 func (m mediaClient) Delete(id string) error {

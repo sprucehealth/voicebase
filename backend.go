@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	prodAPIURL = "https://apis.voicebase.com/v2-beta"
+	prodAPIURL = "https://apis.voicebase.com/v3"
 )
 
 // Backend is an interface for making calls against the Voicebase service.
