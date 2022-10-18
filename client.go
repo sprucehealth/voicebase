@@ -1,5 +1,7 @@
 package voicebase
 
+import "context"
+
 type Client struct {
 	Media MediaClient
 }
@@ -13,18 +15,18 @@ func getC() *Client {
 }
 
 // UploadMedia uploads a media to voicebase for transcribing.
-func UploadMedia(url string) (string, error) {
-	return DefaultClient.Media.Upload(url)
+func UploadMedia(ctx context.Context, url string) (string, error) {
+	return DefaultClient.Media.Upload(ctx, url)
 }
 
 // GetMedia returns a media from voicebase with the appropriate ID.
-func GetMedia(id string) (*Media, error) {
-	return DefaultClient.Media.Get(id)
+func GetMedia(ctx context.Context, id string) (*Media, error) {
+	return DefaultClient.Media.Get(ctx, id)
 }
 
 // DeleteMedia enables deleting of media on voicebase identified by its ID.
-func DeleteMedia(id string) error {
-	return DefaultClient.Media.Delete(id)
+func DeleteMedia(ctx context.Context, id string) error {
+	return DefaultClient.Media.Delete(ctx, id)
 }
 
 func (c *Client) Init(bearerToken string) {
