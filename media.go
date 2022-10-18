@@ -2,6 +2,7 @@ package voicebase
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"mime/multipart"
 )
@@ -71,9 +72,9 @@ var voicemailOptimizedConfiguration = &Configuration{
 }
 
 type MediaClient interface {
-	Upload(url string) (string, error)
-	Get(id string) (*Media, error)
-	Delete(id string) error
+	Upload(ctx context.Context, url string) (string, error)
+	Get(ctx context.Context, id string) (*Media, error)
+	Delete(ctx context.Context, id string) error
 }
 
 type mediaClient struct {
@@ -88,7 +89,7 @@ func NewMediaClient(backend Backend, bearerToken string) MediaClient {
 	}
 }
 
-func (m mediaClient) Upload(url string) (string, error) {
+func (m mediaClient) Upload(ctx context.Context, url string) (string, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
@@ -106,22 +107,22 @@ func (m mediaClient) Upload(url string) (string, error) {
 	}
 
 	var media Media
-	if err := m.b.CallMultipart("POST", "media", m.bearerToken, writer.Boundary(), body, &media); err != nil {
+	if err := m.b.CallMultipart(ctx, "POST", "media", m.bearerToken, writer.Boundary(), body, &media); err != nil {
 		return "", err
 	}
 
 	return media.ID, nil
 }
 
-func (m mediaClient) Get(id string) (*Media, error) {
+func (m mediaClient) Get(ctx context.Context, id string) (*Media, error) {
 	var media Media
-	if err := m.b.Call("GET", "media/"+id, m.bearerToken, &media); err != nil {
+	if err := m.b.Call(ctx, "GET", "media/"+id, m.bearerToken, &media); err != nil {
 		return nil, err
 	}
 
 	return &media, nil
 }
 
-func (m mediaClient) Delete(id string) error {
-	return m.b.Call("DELETE", "media/"+id, m.bearerToken, nil)
+func (m mediaClient) Delete(ctx context.Context, id string) error {
+	return m.b.Call(ctx, "DELETE", "media/"+id, m.bearerToken, nil)
 }
