@@ -1,8 +1,6 @@
 package voicebase
 
-import (
-	"encoding/json"
-)
+import "fmt"
 
 type ErrorItem struct {
 	Error string `json:"error"`
@@ -16,6 +14,5 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	ret, _ := json.Marshal(e)
-	return string(ret)
+	return fmt.Sprintf("voicebase: status=%d %s: %s", e.Status, e.Reference, e.Errors.Error)
 }

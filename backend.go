@@ -6,61 +6,34 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 )
 
 const (
 	prodAPIURL = "https://apis.voicebase.com/v3"
 )
 
-// Backend is an interface for making calls against the Voicebase service.
-// This interface exists to enable mocking during testing if needed.
-type Backend interface {
-	Call(ctx context.Context, method, path, key string, v interface{}) error
-	CallMultipart(ctx context.Context, method, path, key, boundary string, body io.Reader, v interface{}) error
-}
-
-// BackendConfiguration is the internal implementation for making HTTP calls to Voicebase.
-type BackendConfiguration struct {
-	HTTPClient *http.Client
-}
-
-// GetBackend returns the currently used backend in the binding.
-func GetBackend() Backend {
-	return BackendConfiguration{
-		HTTPClient: httpClient,
-	}
-}
-
-var httpClient = &http.Client{Timeout: 30 * time.Second}
-
-// SetHTTPClient overrides the default HTTP client.
-func SetHTTPClient(client *http.Client) {
-	httpClient = client
-}
-
-func (s BackendConfiguration) CallMultipart(ctx context.Context, method, path, key, boundary string, body io.Reader, v interface{}) error {
+func (c *Client) callMultipart(ctx context.Context, method, path, boundary string, body io.Reader, v interface{}) error {
 	contentType := "multipart/form-data; boundary=" + boundary
 
-	req, err := s.NewRequest(ctx, method, path, key, contentType, body)
+	req, err := c.newRequest(ctx, method, path, contentType, body)
 	if err != nil {
 		return err
 	}
 
-	return s.Do(req, v)
+	return c.do(req, v)
 }
 
-func (s BackendConfiguration) Call(ctx context.Context, method, path, key string, v interface{}) error {
-	req, err := s.NewRequest(ctx, method, path, key, "", nil)
+func (c *Client) call(ctx context.Context, method, path string, v interface{}) error {
+	req, err := c.newRequest(ctx, method, path, "", nil)
 	if err != nil {
 		return err
 	}
 
-	return s.Do(req, v)
+	return c.do(req, v)
 }
 
 // NewRequest is used by Call to generate an http.Request.
-func (s BackendConfiguration) NewRequest(ctx context.Context, method, path, key, contentType string, body io.Reader) (*http.Request, error) {
+func (c *Client) newRequest(ctx context.Context, method, path, contentType string, body io.Reader) (*http.Request, error) {
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
@@ -74,7 +47,7 @@ func (s BackendConfiguration) NewRequest(ctx context.Context, method, path, key,
 		req.Header.Add("Content-Type", contentType)
 	}
 
-	req.Header.Add("Authorization", "Bearer "+key)
+	req.Header.Add("Authorization", "Bearer "+c.bearerToken)
 
 	return req, nil
 }
@@ -82,8 +55,8 @@ func (s BackendConfiguration) NewRequest(ctx context.Context, method, path, key,
 // Do is used by Call to execute an API request and parse the response. It uses
 // the backend's HTTP client to execute the request and unmarshals the response
 // into v. It also handles unmarshaling errors returned by the API.
-func (s BackendConfiguration) Do(req *http.Request, v interface{}) error {
-	res, err := s.HTTPClient.Do(req)
+func (c *Client) do(req *http.Request, v interface{}) error {
+	res, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
 	}

@@ -71,25 +71,7 @@ var voicemailOptimizedConfiguration = &Configuration{
 	},
 }
 
-type MediaClient interface {
-	Upload(ctx context.Context, url string) (string, error)
-	Get(ctx context.Context, id string) (*Media, error)
-	Delete(ctx context.Context, id string) error
-}
-
-type mediaClient struct {
-	b           Backend
-	bearerToken string
-}
-
-func NewMediaClient(backend Backend, bearerToken string) MediaClient {
-	return &mediaClient{
-		b:           backend,
-		bearerToken: bearerToken,
-	}
-}
-
-func (m mediaClient) Upload(ctx context.Context, url string) (string, error) {
+func (c *Client) Upload(ctx context.Context, url string) (string, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
@@ -107,22 +89,21 @@ func (m mediaClient) Upload(ctx context.Context, url string) (string, error) {
 	}
 
 	var media Media
-	if err := m.b.CallMultipart(ctx, "POST", "media", m.bearerToken, writer.Boundary(), body, &media); err != nil {
+	if err := c.callMultipart(ctx, "POST", "media", writer.Boundary(), body, &media); err != nil {
 		return "", err
 	}
 
 	return media.ID, nil
 }
 
-func (m mediaClient) Get(ctx context.Context, id string) (*Media, error) {
+func (c *Client) Get(ctx context.Context, id string) (*Media, error) {
 	var media Media
-	if err := m.b.Call(ctx, "GET", "media/"+id, m.bearerToken, &media); err != nil {
+	if err := c.call(ctx, "GET", "media/"+id, &media); err != nil {
 		return nil, err
 	}
-
 	return &media, nil
 }
 
-func (m mediaClient) Delete(ctx context.Context, id string) error {
-	return m.b.Call(ctx, "DELETE", "media/"+id, m.bearerToken, nil)
+func (c *Client) Delete(ctx context.Context, id string) error {
+	return c.call(ctx, "DELETE", "media/"+id, nil)
 }
