@@ -71,7 +71,7 @@ var voicemailOptimizedConfiguration = &Configuration{
 	},
 }
 
-func (c *Client) Upload(ctx context.Context, url string) (string, error) {
+func (c *Client) UploadMedia(ctx context.Context, url string) (string, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
@@ -96,7 +96,7 @@ func (c *Client) Upload(ctx context.Context, url string) (string, error) {
 	return media.ID, nil
 }
 
-func (c *Client) Get(ctx context.Context, id string) (*Media, error) {
+func (c *Client) GetMedia(ctx context.Context, id string) (*Media, error) {
 	var media Media
 	if err := c.call(ctx, "GET", "media/"+id, &media); err != nil {
 		return nil, err
@@ -104,6 +104,6 @@ func (c *Client) Get(ctx context.Context, id string) (*Media, error) {
 	return &media, nil
 }
 
-func (c *Client) Delete(ctx context.Context, id string) error {
+func (c *Client) DeleteMedia(ctx context.Context, id string) error {
 	return c.call(ctx, "DELETE", "media/"+id, nil)
 }
