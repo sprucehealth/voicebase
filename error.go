@@ -21,8 +21,15 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	if len(e.Errors) > 0 {
-		return fmt.Sprintf("voicebase: status=%d %s: %s", e.Status, e.Reference, e.Errors[0].Error)
+	errStr := fmt.Sprintf("voicebase: status=%d %s: ", e.Status, e.Reference)
+	for i, err := range e.Errors {
+		if i > 0 {
+			errStr += ", "
+		}
+		errStr += err.Error
 	}
-	return ""
+	for _, warn := range e.Warnings {
+		errStr += fmt.Sprintf(", warning (code %d @ %s): %s", warn.Code, warn.Path, warn.Message)
+	}
+	return errStr
 }
